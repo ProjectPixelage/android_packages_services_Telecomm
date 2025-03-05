@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-package com.android.server.telecom.voip;
+package com.android.server.telecom.callsequencing.voip;
 
 import android.util.Log;
 
 import com.android.server.telecom.CallsManager;
+import com.android.server.telecom.callsequencing.CallTransaction;
+import com.android.server.telecom.callsequencing.CallTransactionResult;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -27,7 +29,7 @@ import java.util.concurrent.CompletionStage;
  * This transaction should be used to change the global mute state for transactional
  * calls. There is currently no way for this transaction to fail.
  */
-public class SetMuteStateTransaction extends VoipCallTransaction {
+public class SetMuteStateTransaction extends CallTransaction {
 
     private static final String TAG = SetMuteStateTransaction.class.getSimpleName();
     private final CallsManager mCallsManager;
@@ -40,14 +42,14 @@ public class SetMuteStateTransaction extends VoipCallTransaction {
     }
 
     @Override
-    public CompletionStage<VoipCallTransactionResult> processTransaction(Void v) {
+    public CompletionStage<CallTransactionResult> processTransaction(Void v) {
         Log.d(TAG, "processTransaction");
-        CompletableFuture<VoipCallTransactionResult> future = new CompletableFuture<>();
+        CompletableFuture<CallTransactionResult> future = new CompletableFuture<>();
 
         mCallsManager.mute(mIsMuted);
 
-        future.complete(new VoipCallTransactionResult(
-                VoipCallTransactionResult.RESULT_SUCCEED,
+        future.complete(new CallTransactionResult(
+                CallTransactionResult.RESULT_SUCCEED,
                 "The Mute State was changed successfully"));
 
         return future;

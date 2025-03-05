@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package com.android.server.telecom.voip;
+package com.android.server.telecom.callsequencing.voip;
 
 import static android.telecom.CallAttributes.CALL_CAPABILITIES_KEY;
 import static android.telecom.CallAttributes.DISPLAY_NAME_KEY;
 
-import static com.android.server.telecom.voip.VideoStateTranslation.TransactionalVideoStateToVideoProfileState;
+import static com.android.server.telecom.callsequencing.voip.VideoStateTranslation
+        .TransactionalVideoStateToVideoProfileState;
 
 import android.os.Bundle;
 import android.telecom.CallAttributes;
@@ -30,12 +31,14 @@ import android.util.Log;
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.server.telecom.Call;
 import com.android.server.telecom.CallsManager;
+import com.android.server.telecom.callsequencing.CallTransaction;
+import com.android.server.telecom.callsequencing.CallTransactionResult;
 import com.android.server.telecom.flags.FeatureFlags;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-public class IncomingCallTransaction extends VoipCallTransaction {
+public class IncomingCallTransaction extends CallTransaction {
 
     private static final String TAG = IncomingCallTransaction.class.getSimpleName();
     private final String mCallId;
@@ -64,7 +67,7 @@ public class IncomingCallTransaction extends VoipCallTransaction {
     }
 
     @Override
-    public CompletionStage<VoipCallTransactionResult> processTransaction(Void v) {
+    public CompletionStage<CallTransactionResult> processTransaction(Void v) {
         Log.d(TAG, "processTransaction");
 
         if (mCallsManager.isIncomingCallPermitted(mCallAttributes.getPhoneAccountHandle())) {
@@ -75,13 +78,13 @@ public class IncomingCallTransaction extends VoipCallTransaction {
                     generateExtras(mCallAttributes), false);
 
             return CompletableFuture.completedFuture(
-                    new VoipCallTransactionResult(
-                            VoipCallTransactionResult.RESULT_SUCCEED, call, "success"));
+                    new CallTransactionResult(
+                            CallTransactionResult.RESULT_SUCCEED, call, "success", true));
         } else {
             Log.d(TAG, "processTransaction: incoming call is not permitted at this time");
 
             return CompletableFuture.completedFuture(
-                    new VoipCallTransactionResult(
+                    new CallTransactionResult(
                             CallException.CODE_CALL_NOT_PERMITTED_AT_PRESENT_TIME,
                             "incoming call not permitted at the current time"));
         }

@@ -44,7 +44,7 @@ public abstract class TelecomPulledAtom extends Handler {
     private static final String TAG = TelecomPulledAtom.class.getSimpleName();
     private static final long MIN_PULL_INTERVAL_MILLIS = 23L * 60 * 60 * 1000;
     private static final int EVENT_SAVE = 1;
-    private final Context mContext;
+    protected final Context mContext;
     @VisibleForTesting(otherwise = VisibleForTesting.PROTECTED)
     public PulledAtoms mPulledAtoms;
     protected long mLastPulledTimestamps;

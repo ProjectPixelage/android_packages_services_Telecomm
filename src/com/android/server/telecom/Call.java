@@ -21,8 +21,10 @@ import static android.telephony.TelephonyManager.EVENT_DISPLAY_EMERGENCY_MESSAGE
 
 import static com.android.server.telecom.CachedCallback.TYPE_QUEUE;
 import static com.android.server.telecom.CachedCallback.TYPE_STATE;
-import static com.android.server.telecom.voip.VideoStateTranslation.TransactionalVideoStateToString;
-import static com.android.server.telecom.voip.VideoStateTranslation.VideoProfileStateToTransactionalVideoState;
+import static com.android.server.telecom.callsequencing.voip.VideoStateTranslation
+        .TransactionalVideoStateToString;
+import static com.android.server.telecom.callsequencing.voip.VideoStateTranslation
+        .VideoProfileStateToTransactionalVideoState;
 
 import android.annotation.NonNull;
 import android.annotation.Nullable;
@@ -78,9 +80,9 @@ import com.android.server.telecom.flags.FeatureFlags;
 import com.android.server.telecom.stats.CallFailureCause;
 import com.android.server.telecom.stats.CallStateChangedAtomWriter;
 import com.android.server.telecom.ui.ToastFactory;
-import com.android.server.telecom.voip.TransactionManager;
-import com.android.server.telecom.voip.VerifyCallStateChangeTransaction;
-import com.android.server.telecom.voip.VoipCallTransactionResult;
+import com.android.server.telecom.callsequencing.TransactionManager;
+import com.android.server.telecom.callsequencing.VerifyCallStateChangeTransaction;
+import com.android.server.telecom.callsequencing.CallTransactionResult;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -3185,7 +3187,7 @@ public class Call implements CreateConnectionResponse, EventManager.Loggable,
         tm.addTransaction(new VerifyCallStateChangeTransaction(mCallsManager.getLock(),
                 this, targetCallState), new OutcomeReceiver<>() {
             @Override
-            public void onResult(VoipCallTransactionResult result) {
+            public void onResult(CallTransactionResult result) {
                 Log.i(this, "awaitCallStateChangeAndMaybeDisconnectCall: %s: onResult:"
                         + " due to CallException=[%s]", callingMethod, result);
             }

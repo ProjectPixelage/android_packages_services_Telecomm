@@ -447,12 +447,12 @@ public final class Timeouts {
 
     /**
      * Returns the duration of time a VoIP call can be in an intermediate state before Telecom will
-     * try to clean up the call.
+     * try to clean up the call.  The default is 2 minutes.
      * @return the state timeout in millis.
      */
     public static long getVoipCallIntermediateStateTimeoutMillis() {
         return DeviceConfig.getLong(DeviceConfig.NAMESPACE_TELEPHONY,
-                INTERMEDIATE_STATE_VOIP_NORMAL_TIMEOUT_MILLIS, 60000L);
+                INTERMEDIATE_STATE_VOIP_NORMAL_TIMEOUT_MILLIS, 120000L);
     }
 
     /**

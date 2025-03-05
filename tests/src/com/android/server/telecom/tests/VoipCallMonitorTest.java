@@ -49,7 +49,7 @@ import androidx.test.filters.SmallTest;
 import com.android.server.telecom.Call;
 import com.android.server.telecom.CallState;
 import com.android.server.telecom.TelecomSystem;
-import com.android.server.telecom.voip.VoipCallMonitor;
+import com.android.server.telecom.callsequencing.voip.VoipCallMonitor;
 
 import org.junit.Before;
 import org.junit.Test;

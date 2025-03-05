@@ -14,24 +14,31 @@
  * limitations under the License.
  */
 
-package com.android.server.telecom.voip;
+package com.android.server.telecom.callsequencing.voip;
 
 import android.telecom.CallException;
 
 import com.android.server.telecom.LoggedHandlerExecutor;
 import com.android.server.telecom.TelecomSystem;
+import com.android.server.telecom.callsequencing.CallTransaction;
+import com.android.server.telecom.callsequencing.CallTransactionResult;
+import com.android.server.telecom.callsequencing.TransactionManager;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * A VoipCallTransaction implementation that its sub transactions will be executed in parallel
+ * A CallTransaction implementation that its sub transactions will be executed in serial
  */
-public class ParallelTransaction extends VoipCallTransaction {
-    public ParallelTransaction(List<VoipCallTransaction> subTransactions,
+public class SerialTransaction extends CallTransaction {
+    public SerialTransaction(List<CallTransaction> subTransactions,
             TelecomSystem.SyncRoot lock) {
         super(subTransactions, lock);
+    }
+
+    public void appendTransaction(CallTransaction transaction){
+        mSubTransactions.add(transaction);
     }
 
     @Override
@@ -42,12 +49,13 @@ public class ParallelTransaction extends VoipCallTransaction {
         }
         TransactionManager.TransactionCompleteListener subTransactionListener =
                 new TransactionManager.TransactionCompleteListener() {
-                    private final AtomicInteger mCount = new AtomicInteger(mSubTransactions.size());
+                    private final AtomicInteger mTransactionIndex = new AtomicInteger(0);
 
                     @Override
-                    public void onTransactionCompleted(VoipCallTransactionResult result,
+                    public void onTransactionCompleted(CallTransactionResult result,
                             String transactionName) {
-                        if (result.getResult() != VoipCallTransactionResult.RESULT_SUCCEED) {
+                        if (result.getResult() != CallTransactionResult.RESULT_SUCCEED) {
+                            handleTransactionFailure();
                             CompletableFuture.completedFuture(null).thenApplyAsync(
                                     (x) -> {
                                         finish(result);
@@ -58,7 +66,13 @@ public class ParallelTransaction extends VoipCallTransaction {
                                             mTransactionName + "@" + hashCode()
                                                     + ".oTC", mLock));
                         } else {
-                            if (mCount.decrementAndGet() == 0) {
+                            int currTransactionIndex = mTransactionIndex.incrementAndGet();
+                            if (currTransactionIndex < mSubTransactions.size()) {
+                                CallTransaction transaction = mSubTransactions.get(
+                                        currTransactionIndex);
+                                transaction.setCompleteListener(this);
+                                transaction.start();
+                            } else {
                                 scheduleTransaction();
                             }
                         }
@@ -66,10 +80,11 @@ public class ParallelTransaction extends VoipCallTransaction {
 
                     @Override
                     public void onTransactionTimeout(String transactionName) {
+                        handleTransactionFailure();
                         CompletableFuture.completedFuture(null).thenApplyAsync(
                                 (x) -> {
-                                    VoipCallTransactionResult mainResult =
-                                            new VoipCallTransactionResult(
+                                    CallTransactionResult mainResult =
+                                            new CallTransactionResult(
                                                     CallException.CODE_OPERATION_TIMED_OUT,
                                             String.format("sub transaction %s timed out",
                                                     transactionName));
@@ -82,9 +97,11 @@ public class ParallelTransaction extends VoipCallTransaction {
                                                 + ".oTT", mLock));
                     }
                 };
-        for (VoipCallTransaction transaction : mSubTransactions) {
-            transaction.setCompleteListener(subTransactionListener);
-            transaction.start();
-        }
+        CallTransaction transaction = mSubTransactions.get(0);
+        transaction.setCompleteListener(subTransactionListener);
+        transaction.start();
+
     }
+
+    public void handleTransactionFailure() {}
 }

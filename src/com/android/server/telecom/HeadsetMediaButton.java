@@ -103,7 +103,7 @@ public class HeadsetMediaButton extends CallsManagerListenerBase {
                 if ((event != null) && ((event.getKeyCode() == KeyEvent.KEYCODE_HEADSETHOOK) ||
                         (event.getKeyCode() == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE))) {
                     synchronized (mLock) {
-                        Log.v(this, "SessionCallback: HEADSETHOOK/MEDIA_PLAY_PAUSE");
+                        Log.i(this, "onMediaButton: event=%s", event);
                         boolean consumed = handleCallMediaButton(event);
                         Log.v(this, "==> handleCallMediaButton(): consumed = %b.", consumed);
                         return consumed;

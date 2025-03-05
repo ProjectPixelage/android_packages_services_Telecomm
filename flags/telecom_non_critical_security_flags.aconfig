@@ -8,3 +8,14 @@ flag {
   description: "When set, Telecom will unregister accounts if the service is not resolvable"
   bug: "281061708"
 }
+
+# OWNER=tgunn TARGET=25Q2
+flag {
+  name: "enforce_transactional_exclusivity"
+  namespace: "telecom"
+  description: "When set, ensure that transactional accounts cannot also be call capable"
+  bug: "376936125"
+  metadata {
+    purpose: PURPOSE_BUGFIX
+  }
+}

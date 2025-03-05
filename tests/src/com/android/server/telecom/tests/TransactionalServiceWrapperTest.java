@@ -39,10 +39,10 @@ import com.android.server.telecom.CallsManager;
 import com.android.server.telecom.TelecomSystem;
 import com.android.server.telecom.TransactionalServiceRepository;
 import com.android.server.telecom.TransactionalServiceWrapper;
-import com.android.server.telecom.voip.EndCallTransaction;
-import com.android.server.telecom.voip.HoldCallTransaction;
-import com.android.server.telecom.voip.SerialTransaction;
-import com.android.server.telecom.voip.TransactionManager;
+import com.android.server.telecom.callsequencing.voip.EndCallTransaction;
+import com.android.server.telecom.callsequencing.voip.HoldCallTransaction;
+import com.android.server.telecom.callsequencing.voip.SerialTransaction;
+import com.android.server.telecom.callsequencing.TransactionManager;
 
 import org.junit.After;
 import org.junit.Before;
@@ -83,9 +83,8 @@ public class TransactionalServiceWrapperTest extends TelecomTestCase {
         Mockito.when(mCallsManager.getLock()).thenReturn(mLock);
         Mockito.when(mCallEventCallback.asBinder()).thenReturn(mIBinder);
         mTransactionalServiceWrapper = new TransactionalServiceWrapper(mCallEventCallback,
-                mCallsManager, SERVICE_HANDLE, mMockCall1, mRepository);
-
-        mTransactionalServiceWrapper.setTransactionManager(mTransactionManager);
+                mCallsManager, SERVICE_HANDLE, mMockCall1, mRepository, mTransactionManager,
+                false /*call sequencing*/);
     }
 
     @Override
@@ -98,7 +97,8 @@ public class TransactionalServiceWrapperTest extends TelecomTestCase {
     public void testTransactionalServiceWrapperStartState() throws Exception {
         TransactionalServiceWrapper service =
                 new TransactionalServiceWrapper(mCallEventCallback,
-                        mCallsManager, SERVICE_HANDLE, mMockCall1, mRepository);
+                        mCallsManager, SERVICE_HANDLE, mMockCall1, mRepository, mTransactionManager,
+                        false /*call sequencing*/);
 
         assertEquals(SERVICE_HANDLE, service.getPhoneAccountHandle());
         assertEquals(1, service.getNumberOfTrackedCalls());
@@ -108,7 +108,8 @@ public class TransactionalServiceWrapperTest extends TelecomTestCase {
     public void testTransactionalServiceWrapperCallCount() throws Exception {
         TransactionalServiceWrapper service =
                 new TransactionalServiceWrapper(mCallEventCallback,
-                        mCallsManager, SERVICE_HANDLE, mMockCall1, mRepository);
+                        mCallsManager, SERVICE_HANDLE, mMockCall1, mRepository, mTransactionManager,
+                        false /*call sequencing*/);
 
         assertEquals(1, service.getNumberOfTrackedCalls());
         service.trackCall(mMockCall2);

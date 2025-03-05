@@ -318,15 +318,16 @@ public class AudioRoute {
     // sending SPEAKER_OFF, or disconnecting SCO).
     void onOrigRouteAsPendingRoute(boolean active, PendingAudioRoute pendingAudioRoute,
             AudioManager audioManager, BluetoothRouteManager bluetoothRouteManager) {
-        Log.i(this, "onOrigRouteAsPendingRoute: active (%b), type (%d)", active, mAudioRouteType);
+        Log.i(this, "onOrigRouteAsPendingRoute: active (%b), type (%s)", active,
+                DEVICE_TYPE_STRINGS.get(mAudioRouteType));
         if (active) {
-            if (mAudioRouteType == TYPE_SPEAKER) {
-                pendingAudioRoute.addMessage(SPEAKER_OFF, null);
-            }
             int result = clearCommunicationDevice(pendingAudioRoute, bluetoothRouteManager,
                     audioManager);
-            // Only send BT_AUDIO_DISCONNECTED for SCO if disconnect was successful.
-            if (mAudioRouteType == TYPE_BLUETOOTH_SCO && result == BluetoothStatusCodes.SUCCESS) {
+            if (mAudioRouteType == TYPE_SPEAKER) {
+                pendingAudioRoute.addMessage(SPEAKER_OFF, null);
+            } else if (mAudioRouteType == TYPE_BLUETOOTH_SCO
+                    && result == BluetoothStatusCodes.SUCCESS) {
+                // Only send BT_AUDIO_DISCONNECTED for SCO if disconnect was successful.
                 pendingAudioRoute.addMessage(BT_AUDIO_DISCONNECTED, mBluetoothAddress);
             }
         }
@@ -407,8 +408,26 @@ public class AudioRoute {
         }
 
         if (result == BluetoothStatusCodes.SUCCESS) {
+            if (pendingAudioRoute.getFeatureFlags().resolveActiveBtRoutingAndBtTimingIssue()) {
+                maybeClearConnectedPendingMessages(pendingAudioRoute);
+            }
             pendingAudioRoute.setCommunicationDeviceType(AudioRoute.TYPE_INVALID);
         }
         return result;
+    }
+
+    private void maybeClearConnectedPendingMessages(PendingAudioRoute pendingAudioRoute) {
+        // If we're still waiting on BT_AUDIO_CONNECTED/SPEAKER_ON but have routed out of it
+        // since and disconnected the device, then remove that message so we aren't waiting for
+        // it in the message queue.
+        if (mAudioRouteType == TYPE_BLUETOOTH_SCO) {
+            Log.i(this, "clearCommunicationDevice: Clearing pending "
+                    + "BT_AUDIO_CONNECTED messages.");
+            pendingAudioRoute.clearPendingMessage(
+                    new Pair<>(BT_AUDIO_CONNECTED, mBluetoothAddress));
+        } else if (mAudioRouteType == TYPE_SPEAKER) {
+            Log.i(this, "clearCommunicationDevice: Clearing pending SPEAKER_ON messages.");
+            pendingAudioRoute.clearPendingMessage(new Pair<>(SPEAKER_ON, null));
+        }
     }
 }

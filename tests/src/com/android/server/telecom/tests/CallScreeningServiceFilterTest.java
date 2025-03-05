@@ -17,6 +17,7 @@
 package com.android.server.telecom.tests;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -136,7 +137,7 @@ public class CallScreeningServiceFilterTest extends TelecomTestCase {
         when(mContext.getSystemService(TelecomManager.class))
                 .thenReturn(mTelecomManager);
         when(mTelecomManager.getSystemDialerPackage()).thenReturn(PKG_NAME);
-        when(mAppLabelProxy.getAppLabel(PKG_NAME)).thenReturn(APP_NAME);
+        when(mAppLabelProxy.getAppLabel(PKG_NAME, PA_HANDLE.getUserHandle())).thenReturn(APP_NAME);
         when(mParcelableCallUtilsConverter.toParcelableCall(
                 eq(mCall), anyBoolean(), eq(mPhoneAccountRegistrar))).thenReturn(null);
         when(mContext.bindServiceAsUser(nullable(Intent.class), nullable(ServiceConnection.class),

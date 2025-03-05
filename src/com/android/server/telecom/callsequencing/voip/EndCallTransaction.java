@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.server.telecom.voip;
+package com.android.server.telecom.callsequencing.voip;
 
 import android.telecom.DisconnectCause;
 import android.util.Log;
@@ -22,6 +22,8 @@ import android.util.Log;
 import com.android.server.telecom.Call;
 import com.android.server.telecom.CallState;
 import com.android.server.telecom.CallsManager;
+import com.android.server.telecom.callsequencing.CallTransaction;
+import com.android.server.telecom.callsequencing.CallTransactionResult;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -29,7 +31,7 @@ import java.util.concurrent.CompletionStage;
 /**
  * This transaction should only be created for a CallControl action.
  */
-public class EndCallTransaction extends VoipCallTransaction {
+public class EndCallTransaction extends CallTransaction {
     private static final String TAG = EndCallTransaction.class.getSimpleName();
     private final CallsManager mCallsManager;
     private final Call mCall;
@@ -43,7 +45,7 @@ public class EndCallTransaction extends VoipCallTransaction {
     }
 
     @Override
-    public CompletionStage<VoipCallTransactionResult> processTransaction(Void v) {
+    public CompletionStage<CallTransactionResult> processTransaction(Void v) {
         int code = mCause.getCode();
         Log.d(TAG, String.format("processTransaction: mCode=[%d], mCall=[%s]", code, mCall));
 
@@ -56,7 +58,7 @@ public class EndCallTransaction extends VoipCallTransaction {
         mCallsManager.markCallAsRemoved(mCall);
 
         return CompletableFuture.completedFuture(
-                new VoipCallTransactionResult(VoipCallTransactionResult.RESULT_SUCCEED,
+                new CallTransactionResult(CallTransactionResult.RESULT_SUCCEED,
                         "EndCallTransaction: RESULT_SUCCEED"));
     }
 }

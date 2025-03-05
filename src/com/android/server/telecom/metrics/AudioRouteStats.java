@@ -99,6 +99,8 @@ public class AudioRouteStats extends TelecomPulledAtom {
                     TelecomStatsLog.buildStatsEvent(getTag(),
                             v.getCallAudioRouteSource(), v.getCallAudioRouteDest(),
                             v.getSuccess(), v.getRevert(), v.getCount(), v.getAverageLatencyMs())));
+            mAudioRouteStatsMap.clear();
+            onAggregate();
             return StatsManager.PULL_SUCCESS;
         } else {
             return StatsManager.PULL_SKIP;

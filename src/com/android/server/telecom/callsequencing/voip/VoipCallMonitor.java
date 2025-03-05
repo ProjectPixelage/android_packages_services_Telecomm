@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.server.telecom.voip;
+package com.android.server.telecom.callsequencing.voip;
 
 import static android.app.ForegroundServiceDelegationOptions.DELEGATION_SERVICE_PHONE_CALL;
 import static android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA;

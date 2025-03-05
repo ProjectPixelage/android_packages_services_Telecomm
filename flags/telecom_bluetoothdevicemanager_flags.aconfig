@@ -8,3 +8,13 @@ flag {
   description: "Fix for Log.wtf in the BinderProxy"
   bug: "333417369"
 }
+# OWNER=huiwang TARGET=25Q1
+flag {
+  name: "keep_bluetooth_devices_cache_updated"
+  namespace: "telecom"
+  description: "Fix the devices cache issue of BluetoothDeviceManager"
+  bug: "380320985"
+  metadata {
+    purpose: PURPOSE_BUGFIX
+  }
+}

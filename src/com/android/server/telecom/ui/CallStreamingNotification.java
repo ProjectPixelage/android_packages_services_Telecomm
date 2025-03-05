@@ -192,7 +192,7 @@ public class CallStreamingNotification extends CallsManagerListenerBase implemen
         // Use the caller name for the label if available, default to app name if none.
         if (TextUtils.isEmpty(callerName)) {
             // App did not provide a caller name, so default to app's name.
-            callerName = mAppLabelProxy.getAppLabel(appPackageName).toString();
+            callerName = mAppLabelProxy.getAppLabel(appPackageName, userHandle).toString();
         }
 
         // Action to hangup; this can use the default hangup action from the call style

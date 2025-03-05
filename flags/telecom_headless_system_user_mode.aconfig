@@ -12,3 +12,27 @@ flag {
         purpose: PURPOSE_BUGFIX
       }
 }
+
+# OWNER=grantmenke TARGET=25Q1
+flag {
+    name: "telecom_main_user_in_block_check"
+    is_exported: true
+    namespace: "telecom"
+    description: "Support HSUM mode by using the main user when checking if a number is blocked."
+    bug: "369062239"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+      }
+}
+
+# OWNER=grantmenke TARGET=25Q2
+flag {
+    name: "telecom_app_label_proxy_hsum_aware"
+    is_exported: true
+    namespace: "telecom"
+    description: "Support HSUM mode by ensuring AppLableProxy is multiuser aware."
+    bug: "321817633"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+      }
+}

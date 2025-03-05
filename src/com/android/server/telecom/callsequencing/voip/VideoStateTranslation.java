@@ -14,16 +14,11 @@
  * limitations under the License.
  */
 
-package com.android.server.telecom.voip;
+package com.android.server.telecom.callsequencing.voip;
 
 import android.telecom.CallAttributes;
 import android.telecom.Log;
 import android.telecom.VideoProfile;
-
-import com.android.server.telecom.AnomalyReporterAdapter;
-import com.android.server.telecom.AnomalyReporterAdapterImpl;
-
-import java.util.UUID;
 
 /**
  * This remapping class is needed because {@link VideoProfile} has more fine grain levels of video

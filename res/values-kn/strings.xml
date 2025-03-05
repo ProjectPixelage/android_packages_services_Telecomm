@@ -54,13 +54,13 @@
     <string name="no_vm_number_msg" msgid="1339245731058529388">"ಸಿಮ್‌ ಕಾರ್ಡ್‌ನಲ್ಲಿ ಯಾವುದೇ ಧ್ವನಿಮೇಲ್‌ ಸಂಖ್ಯೆಯನ್ನು ಸಂಗ್ರಹಿಸಿಲ್ಲ."</string>
     <string name="add_vm_number_str" msgid="5179510133063168998">"ಸಂಖ್ಯೆಯನ್ನು ಸೇರಿಸಿ"</string>
     <string name="change_default_dialer_dialog_title" msgid="5861469279421508060">"<xliff:g id="NEW_APP">%s</xliff:g> ಅನ್ನು ನಿಮ್ಮ ಡಿಫಾಲ್ಟ್ ಫೋನ್ ಆ್ಯಪ್ ಆಗಿ ಮಾಡಬೇಕೆ?"</string>
-    <string name="change_default_dialer_dialog_affirmative" msgid="8604665314757739550">"ಡಿಫಾಲ್ಟ್ ಹೊಂದಿಸಿ"</string>
+    <string name="change_default_dialer_dialog_affirmative" msgid="8604665314757739550">"ಡಿಫಾಲ್ಟ್ ಸೆಟ್ ಮಾಡಿ"</string>
     <string name="change_default_dialer_dialog_negative" msgid="8648669840052697821">"ರದ್ದುಮಾಡಿ"</string>
     <string name="change_default_dialer_warning_message" msgid="8461963987376916114">"<xliff:g id="NEW_APP">%s</xliff:g> ಗೆ ನಿಮ್ಮ ಕರೆಗಳ ಎಲ್ಲಾ ಅಂಶಗಳನ್ನು ನಿಯಂತ್ರಿಸಲು ಮತ್ತು ಕರೆಗಳನ್ನು ಮಾಡಲು ಸಾಧ್ಯವಾಗುತ್ತದೆ. ನೀವು ವಿಶ್ವಾಸವಿರಿಸಿರುವಂತಹ ಆ್ಯಪ್‌ಗಳನ್ನು ಮಾತ್ರ ನಿಮ್ಮ ಡಿಫಾಲ್ಟ್ ಆ್ಯಪ್‌ ಆಗಿ ಹೊಂದಿಸಬೇಕು."</string>
     <string name="change_default_call_screening_dialog_title" msgid="5365787219927262408">"<xliff:g id="NEW_APP">%s</xliff:g> ನಿಮ್ಮ ಡೀಫಾಲ್ಟ್ ಕರೆ ಸ್ಕ್ರೀನಿಂಗ್ ಆ್ಯಪ್‌ ಆಗಿ ಮಾಡಬೇಕೇ?"</string>
     <string name="change_default_call_screening_warning_message_for_disable_old_app" msgid="2039830033533243164">"<xliff:g id="OLD_APP">%s</xliff:g> ಇನ್ನು ಮುಂದೆ ಕರೆಗಳನ್ನು ಸ್ಕ್ರೀನ್‌ ಮಾಡಲು ಸಾಧ್ಯವಾಗುವುದಿಲ್ಲ."</string>
     <string name="change_default_call_screening_warning_message" msgid="9020537562292754269">"<xliff:g id="NEW_APP">%s</xliff:g> ಗೆ ನಿಮ್ಮ ಸಂಪರ್ಕಗಳಲ್ಲಿ ಇಲ್ಲದ ಕರೆದಾರರ ಬಗ್ಗೆ ಮಾಹಿತಿಯನ್ನು ನೋಡಲು ಮತ್ತು ಈ ಕರೆಗಳನ್ನು ಬ್ಲಾಕ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗುತ್ತದೆ. ನೀವು ವಿಶ್ವಾಸವಿರಿಸಿರುವಂತಹ ಆ್ಯಪ್‌ಗಳನ್ನು ಮಾತ್ರ ನಿಮ್ಮ ಡೀಫಾಲ್ಟ್ ಕರೆ ಸ್ಕ್ರೀನಿಂಗ್ ಆ್ಯಪ್‌ ಆಗಿ ಹೊಂದಿಸಬೇಕು."</string>
-    <string name="change_default_call_screening_dialog_affirmative" msgid="7162433828280058647">"ಡೀಫಾಲ್ಟ್ ಹೊಂದಿಸಿ"</string>
+    <string name="change_default_call_screening_dialog_affirmative" msgid="7162433828280058647">"ಡೀಫಾಲ್ಟ್ ಸೆಟ್ ಮಾಡಿ"</string>
     <string name="change_default_call_screening_dialog_negative" msgid="1839266125623106342">"ರದ್ದುಮಾಡಿ"</string>
     <string name="blocked_numbers" msgid="8322134197039865180">"ನಿರ್ಬಂಧಿಸಲಾದ ಸಂಖ್ಯೆಗಳು"</string>
     <string name="blocked_numbers_msg" msgid="2797422132329662697">"ನಿರ್ಬಂಧಿಸಲಾದ ಸಂಖ್ಯೆಗಳಿಂದ ಕರೆಗಳು ಅಥವಾ ಪಠ್ಯ ಸಂದೇಶಗಳನ್ನು ನೀವು ಸ್ವೀಕರಿಸುವುದಿಲ್ಲ."</string>

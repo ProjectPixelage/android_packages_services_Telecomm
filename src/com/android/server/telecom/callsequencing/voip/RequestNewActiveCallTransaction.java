@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.server.telecom.voip;
+package com.android.server.telecom.callsequencing.voip;
 
 import android.os.OutcomeReceiver;
 import android.telecom.CallException;
@@ -24,6 +24,8 @@ import com.android.server.telecom.Call;
 import com.android.server.telecom.CallState;
 import com.android.server.telecom.CallsManager;
 import com.android.server.telecom.ConnectionServiceFocusManager;
+import com.android.server.telecom.callsequencing.CallTransaction;
+import com.android.server.telecom.callsequencing.CallTransactionResult;
 import com.android.server.telecom.flags.Flags;
 
 import java.util.concurrent.CompletableFuture;
@@ -42,7 +44,7 @@ import java.util.concurrent.CompletionStage;
  * - MaybeHoldCallForNewCallTransaction was performed before this so any potential active calls
  * should be held now.
  */
-public class RequestNewActiveCallTransaction extends VoipCallTransaction {
+public class RequestNewActiveCallTransaction extends CallTransaction {
 
     private static final String TAG = RequestNewActiveCallTransaction.class.getSimpleName();
     private final CallsManager mCallsManager;
@@ -55,14 +57,14 @@ public class RequestNewActiveCallTransaction extends VoipCallTransaction {
     }
 
     @Override
-    public CompletionStage<VoipCallTransactionResult> processTransaction(Void v) {
+    public CompletionStage<CallTransactionResult> processTransaction(Void v) {
         Log.d(TAG, "processTransaction");
-        CompletableFuture<VoipCallTransactionResult> future = new CompletableFuture<>();
+        CompletableFuture<CallTransactionResult> future = new CompletableFuture<>();
         int currentCallState = mCall.getState();
 
         // certain calls cannot go active/answered (ex. disconnect calls, etc.)
         if (!canBecomeNewCallFocus(currentCallState)) {
-            future.complete(new VoipCallTransactionResult(
+            future.complete(new CallTransactionResult(
                     CallException.CODE_CALL_CANNOT_BE_SET_TO_ACTIVE,
                     "CallState cannot be set to active or answered due to current call"
                             + " state being in invalid state"));
@@ -71,7 +73,7 @@ public class RequestNewActiveCallTransaction extends VoipCallTransaction {
 
         if (!Flags.transactionalHoldDisconnectsUnholdable() &&
                 mCallsManager.getActiveCall() != null) {
-            future.complete(new VoipCallTransactionResult(
+            future.complete(new CallTransactionResult(
                     CallException.CODE_CALL_CANNOT_BE_SET_TO_ACTIVE,
                     "Already an active call. Request hold on current active call."));
             return future;
@@ -81,14 +83,14 @@ public class RequestNewActiveCallTransaction extends VoipCallTransaction {
                     @Override
                     public void onResult(Boolean result) {
                         Log.d(TAG, "processTransaction: onResult");
-                        future.complete(new VoipCallTransactionResult(
-                                VoipCallTransactionResult.RESULT_SUCCEED, null));
+                        future.complete(new CallTransactionResult(
+                                CallTransactionResult.RESULT_SUCCEED, null));
                     }
 
                     @Override
                     public void onError(CallException exception) {
                         Log.d(TAG, "processTransaction: onError");
-                        future.complete(new VoipCallTransactionResult(
+                        future.complete(new CallTransactionResult(
                                 exception.getCode(), exception.getMessage()));
                     }
                 });

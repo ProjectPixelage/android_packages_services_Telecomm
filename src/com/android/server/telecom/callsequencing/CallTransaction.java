@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.server.telecom.voip;
+package com.android.server.telecom.callsequencing;
 
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
-public class VoipCallTransaction {
+public class CallTransaction {
     //TODO: add log events
     private static final long DEFAULT_TRANSACTION_TIMEOUT_MS = 5000L;
 
@@ -52,7 +52,7 @@ public class VoipCallTransaction {
         private long mFinishedTimeNs = -1L;
         // If finished, did this transaction finish because it timed out?
         private boolean mIsTimedOut = false;
-        private VoipCallTransactionResult  mTransactionResult = null;
+        private CallTransactionResult  mTransactionResult = null;
 
         public Stats() {
             addedTimeStamp = LocalDateTime.now();
@@ -70,7 +70,7 @@ public class VoipCallTransaction {
         /**
          * Mark the transaction as completed and record the time.
          */
-        public void markComplete(boolean isTimedOut, VoipCallTransactionResult result) {
+        public void markComplete(boolean isTimedOut, CallTransactionResult result) {
             if (mFinishedTimeNs > -1) return;
             mFinishedTimeNs = System.nanoTime();
             mIsTimedOut = isTimedOut;
@@ -124,7 +124,7 @@ public class VoipCallTransaction {
          * @return the result if the transaction completed, null if it timed out or hasn't completed
          * yet.
          */
-        public VoipCallTransactionResult getTransactionResult() {
+        public CallTransactionResult getTransactionResult() {
             return mTransactionResult;
         }
     }
@@ -134,13 +134,13 @@ public class VoipCallTransaction {
     private final HandlerThread mHandlerThread;
     protected final Handler mHandler;
     protected TransactionManager.TransactionCompleteListener mCompleteListener;
-    protected final List<VoipCallTransaction> mSubTransactions;
+    protected final List<CallTransaction> mSubTransactions;
     protected final TelecomSystem.SyncRoot mLock;
     protected final long mTransactionTimeoutMs;
     protected final Stats mStats;
 
-    public VoipCallTransaction(
-            List<VoipCallTransaction> subTransactions, TelecomSystem.SyncRoot lock,
+    public CallTransaction(
+            List<CallTransaction> subTransactions, TelecomSystem.SyncRoot lock,
             long timeoutMs) {
         mSubTransactions = subTransactions;
         mHandlerThread = new HandlerThread(this.toString());
@@ -151,15 +151,15 @@ public class VoipCallTransaction {
         mStats = Flags.enableCallSequencing() ? new Stats() : null;
     }
 
-    public VoipCallTransaction(List<VoipCallTransaction> subTransactions,
+    public CallTransaction(List<CallTransaction> subTransactions,
             TelecomSystem.SyncRoot lock) {
         this(subTransactions, lock, DEFAULT_TRANSACTION_TIMEOUT_MS);
     }
-    public VoipCallTransaction(TelecomSystem.SyncRoot lock, long timeoutMs) {
+    public CallTransaction(TelecomSystem.SyncRoot lock, long timeoutMs) {
         this(null /* mSubTransactions */, lock, timeoutMs);
     }
 
-    public VoipCallTransaction(TelecomSystem.SyncRoot lock) {
+    public CallTransaction(TelecomSystem.SyncRoot lock) {
         this(null /* mSubTransactions */, lock);
     }
 
@@ -178,7 +178,7 @@ public class VoipCallTransaction {
     }
 
     /**
-     * By default, this processes this transaction. For VoipCallTransactions with sub-transactions,
+     * By default, this processes this transaction. For CallTransaction with sub-transactions,
      * this implementation should be overwritten to handle also processing sub-transactions.
      */
     protected void processTransactions() {
@@ -187,7 +187,7 @@ public class VoipCallTransaction {
 
     /**
      * This method is called when the transaction has finished either successfully or exceptionally.
-     * VoipCallTransactions that are extending this class should override this method to clean up
+     * CallTransaction that are extending this class should override this method to clean up
      * any leftover state.
      */
     protected void finishTransaction() {
@@ -199,7 +199,7 @@ public class VoipCallTransaction {
                 mTransactionName + "@" + hashCode() + ".sT", mLock);
         CompletableFuture<Void> future = CompletableFuture.completedFuture(null);
         future.thenComposeAsync(this::processTransaction, executor)
-                .thenApplyAsync((Function<VoipCallTransactionResult, Void>) result -> {
+                .thenApplyAsync((Function<CallTransactionResult, Void>) result -> {
                     notifyListenersOfResult(result);
                     return null;
                 }, executor)
@@ -208,14 +208,14 @@ public class VoipCallTransaction {
                     // Instead, propagate the failure to the other transactions immediately!
                     String errorMessage = throwable != null ? throwable.getMessage() :
                             "encountered an exception while processing " + mTransactionName;
-                    notifyListenersOfResult(new VoipCallTransactionResult(
+                    notifyListenersOfResult(new CallTransactionResult(
                             CallException.CODE_ERROR_UNKNOWN, errorMessage));
                     Log.e(this, throwable, "Error while executing transaction.");
                     return null;
                 }));
     }
 
-    protected void notifyListenersOfResult(VoipCallTransactionResult result){
+    protected void notifyListenersOfResult(CallTransactionResult result){
         mCompleted.set(true);
         finish(result);
         if (mCompleteListener != null) {
@@ -223,9 +223,9 @@ public class VoipCallTransaction {
         }
     }
 
-    protected CompletionStage<VoipCallTransactionResult> processTransaction(Void v) {
+    protected CompletionStage<CallTransactionResult> processTransaction(Void v) {
         return CompletableFuture.completedFuture(
-                new VoipCallTransactionResult(VoipCallTransactionResult.RESULT_SUCCEED, null));
+                new CallTransactionResult(CallTransactionResult.RESULT_SUCCEED, null));
     }
 
     public final void setCompleteListener(TransactionManager.TransactionCompleteListener listener) {
@@ -248,11 +248,11 @@ public class VoipCallTransaction {
         return mHandler;
     }
 
-    public final void finish(VoipCallTransactionResult result) {
+    public final void finish(CallTransactionResult result) {
         finish(false, result);
     }
 
-    private void finish(boolean isTimedOut, VoipCallTransactionResult result) {
+    private void finish(boolean isTimedOut, CallTransactionResult result) {
         if (mStats != null) mStats.markComplete(isTimedOut, result);
         finishTransaction();
         // finish all sub transactions

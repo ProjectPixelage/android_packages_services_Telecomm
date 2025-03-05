@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,33 +14,38 @@
  * limitations under the License.
  */
 
-package com.android.server.telecom.voip;
+package com.android.server.telecom.callsequencing;
 
 import com.android.server.telecom.Call;
 
 import java.util.Objects;
 
-public class VoipCallTransactionResult {
+public class CallTransactionResult {
     public static final int RESULT_SUCCEED = 0;
+    private static final String VOIP_TRANSACTION_TAG = "VoipCallTransactionResult";
+    private static final String PSTN_TRANSACTION_TAG = "PstnTransactionResult";
 
-    // NOTE: if the VoipCallTransactionResult should not use the RESULT_SUCCEED to represent a
+    // NOTE: if the CallTransactionResult should not use the RESULT_SUCCEED to represent a
     // successful transaction, use an error code defined in the
     // {@link android.telecom.CallException} class
 
     private final int mResult;
     private final String mMessage;
     private final Call mCall;
+    private final String mCallType;
 
-    public VoipCallTransactionResult(int result, String message) {
+    public CallTransactionResult(int result, String message) {
         mResult = result;
         mMessage = message;
         mCall = null;
+        mCallType = "";
     }
 
-    public VoipCallTransactionResult(int result, Call call, String message) {
+    public CallTransactionResult(int result, Call call, String message, boolean isVoip) {
         mResult = result;
         mCall = call;
         mMessage = message;
+        mCallType = isVoip ? VOIP_TRANSACTION_TAG : PSTN_TRANSACTION_TAG;
     }
 
     public int getResult() {
@@ -58,8 +63,8 @@ public class VoipCallTransactionResult {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof VoipCallTransactionResult)) return false;
-        VoipCallTransactionResult that = (VoipCallTransactionResult) o;
+        if (!(o instanceof CallTransactionResult)) return false;
+        CallTransactionResult that = (CallTransactionResult) o;
         return mResult == that.mResult && Objects.equals(mMessage, that.mMessage);
     }
 
@@ -71,7 +76,9 @@ public class VoipCallTransactionResult {
     @Override
     public String toString() {
         return new StringBuilder().
-                append("{ VoipCallTransactionResult: [mResult: ").
+                append("{ ").
+                append(mCallType).
+                append(": [mResult: ").
                 append(mResult).
                 append("], [mCall: ").
                 append((mCall != null) ? mCall : "null").

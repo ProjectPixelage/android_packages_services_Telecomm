@@ -1284,12 +1284,15 @@ public class PhoneAccountRegistrar {
         boolean isNewAccount;
 
         // add self-managed capability for transactional accounts that are missing it
-        if (hasTransactionalCallCapabilities(account) &&
-                !account.hasCapabilities(PhoneAccount.CAPABILITY_SELF_MANAGED)) {
+        if (hasTransactionalCallCapabilities(account)
+                && !account.hasCapabilities(PhoneAccount.CAPABILITY_SELF_MANAGED)) {
             account = account.toBuilder()
                     .setCapabilities(account.getCapabilities()
                             | PhoneAccount.CAPABILITY_SELF_MANAGED)
                     .build();
+            // Note: below we will automatically remove CAPABILITY_CONNECTION_MANAGER,
+            // CAPABILITY_CALL_PROVIDER, and CAPABILITY_SIM_SUBSCRIPTION if this magically becomes
+            // a self-managed phone account here.
         }
 
         PhoneAccount oldAccount = getPhoneAccountUnchecked(account.getAccountHandle());
@@ -1310,6 +1313,12 @@ public class PhoneAccountRegistrar {
         if (account.hasCapabilities(PhoneAccount.CAPABILITY_SELF_MANAGED)) {
             // Turn off bits we don't want to be able to set (TelecomServiceImpl protects against
             // this but we'll also prevent it from happening here, just to be safe).
+            if ((account.getCapabilities() & (PhoneAccount.CAPABILITY_CALL_PROVIDER
+                    | PhoneAccount.CAPABILITY_CONNECTION_MANAGER
+                    | PhoneAccount.CAPABILITY_SIM_SUBSCRIPTION)) > 0) {
+                Log.w(this, "addOrReplacePhoneAccount: attempt to register a "
+                        + "VoIP phone account with call provider/cm/sim sub capabilities.");
+            }
             int newCapabilities = account.getCapabilities() &
                     ~(PhoneAccount.CAPABILITY_CALL_PROVIDER |
                         PhoneAccount.CAPABILITY_CONNECTION_MANAGER |
@@ -1317,7 +1326,10 @@ public class PhoneAccountRegistrar {
 
             // Ensure name is correct.
             CharSequence newLabel = mAppLabelProxy.getAppLabel(
-                    account.getAccountHandle().getComponentName().getPackageName());
+                    account.getAccountHandle().getComponentName().getPackageName(),
+                    UserUtil.getAssociatedUserForCall(
+                            mTelecomFeatureFlags.associatedUserRefactorForWorkProfile(),
+                            this, UserHandle.CURRENT, account.getAccountHandle()));
 
             account = account.toBuilder()
                     .setLabel(newLabel)

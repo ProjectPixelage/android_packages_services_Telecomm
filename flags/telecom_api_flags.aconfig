@@ -73,3 +73,12 @@ flag {
   description: "Formalizes the getLastKnownCellIdentity API that Telecom reliees on as a system api"
   bug: "327454165"
 }
+
+# OWNER=grantmenke TARGET=25Q2
+flag {
+  name: "allow_system_apps_resolve_voip_calls"
+  is_exported: true
+  namespace: "telecom"
+  description: "Allow system apps such as accessibility to accept and end VOIP calls."
+  bug: "353579043"
+}

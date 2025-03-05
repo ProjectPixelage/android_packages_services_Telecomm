@@ -16,7 +16,8 @@
 
 package com.android.server.telecom;
 
-import static com.android.server.telecom.voip.VideoStateTranslation.TransactionalVideoStateToString;
+import static com.android.server.telecom.callsequencing.voip.VideoStateTranslation
+        .TransactionalVideoStateToString;
 
 import android.telecom.Log;
 

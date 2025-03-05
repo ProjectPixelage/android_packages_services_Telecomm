@@ -130,6 +130,10 @@ public class PendingAudioRoute {
         mPendingMessages.remove(message);
     }
 
+    public Set<Pair<Integer, String>> getPendingMessages() {
+        return mPendingMessages;
+    }
+
     public boolean isActive() {
         return mActive;
     }
@@ -145,5 +149,9 @@ public class PendingAudioRoute {
 
     public void overrideDestRoute(AudioRoute route) {
         mDestRoute = route;
+    }
+
+    public FeatureFlags getFeatureFlags() {
+        return mFeatureFlags;
     }
 }

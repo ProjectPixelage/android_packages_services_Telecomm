@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.server.telecom.voip;
+package com.android.server.telecom.callsequencing;
 
 import static android.telecom.CallException.CODE_OPERATION_TIMED_OUT;
 
@@ -32,18 +32,20 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Locale;
 import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
 
 public class TransactionManager {
-    private static final String TAG = "VoipCallTransactionManager";
+    private static final String TAG = "CallTransactionManager";
     private static final int TRANSACTION_HISTORY_SIZE = 20;
     private static TransactionManager INSTANCE = null;
     private static final Object sLock = new Object();
-    private final Queue<VoipCallTransaction> mTransactions;
-    private final Deque<VoipCallTransaction> mCompletedTransactions;
-    private VoipCallTransaction mCurrentTransaction;
+    private final Queue<CallTransaction> mTransactions;
+    private final Deque<CallTransaction> mCompletedTransactions;
+    private CallTransaction mCurrentTransaction;
+    private boolean mProcessingCallSequencing;
 
     public interface TransactionCompleteListener {
-        void onTransactionCompleted(VoipCallTransactionResult result, String transactionName);
+        void onTransactionCompleted(CallTransactionResult result, String transactionName);
         void onTransactionTimeout(String transactionName);
     }
 
@@ -70,28 +72,32 @@ public class TransactionManager {
         return new TransactionManager();
     }
 
-    public void addTransaction(VoipCallTransaction transaction,
-            OutcomeReceiver<VoipCallTransactionResult, CallException> receiver) {
+    public CompletableFuture<Boolean> addTransaction(CallTransaction transaction,
+            OutcomeReceiver<CallTransactionResult, CallException> receiver) {
+        CompletableFuture<Boolean> transactionCompleteFuture = new CompletableFuture<>();
         synchronized (sLock) {
             mTransactions.add(transaction);
         }
         transaction.setCompleteListener(new TransactionCompleteListener() {
             @Override
-            public void onTransactionCompleted(VoipCallTransactionResult result,
+            public void onTransactionCompleted(CallTransactionResult result,
                     String transactionName) {
                 Log.i(TAG, String.format("transaction %s completed: with result=[%d]",
                         transactionName, result.getResult()));
                 try {
                     if (result.getResult() == TelecomManager.TELECOM_TRANSACTION_SUCCESS) {
                         receiver.onResult(result);
+                        transactionCompleteFuture.complete(true);
                     } else {
                         receiver.onError(
                                 new CallException(result.getMessage(),
                                         result.getResult()));
+                        transactionCompleteFuture.complete(false);
                     }
                 } catch (Exception e) {
                     Log.e(TAG, String.format("onTransactionCompleted: Notifying transaction result"
                             + " %s resulted in an Exception.", result), e);
+                    transactionCompleteFuture.complete(false);
                 }
                 finishTransaction();
             }
@@ -102,15 +108,18 @@ public class TransactionManager {
                 try {
                     receiver.onError(new CallException(transactionName + " timeout",
                             CODE_OPERATION_TIMED_OUT));
+                    transactionCompleteFuture.complete(false);
                 } catch (Exception e) {
                     Log.e(TAG, String.format("onTransactionTimeout: Notifying transaction "
                             + " %s resulted in an Exception.", transactionName), e);
+                    transactionCompleteFuture.complete(false);
                 }
                 finishTransaction();
             }
         });
 
         startTransactions();
+        return transactionCompleteFuture;
     }
 
     private void startTransactions() {
@@ -141,23 +150,31 @@ public class TransactionManager {
 
     @VisibleForTesting
     public void clear() {
-        List<VoipCallTransaction> pendingTransactions;
+        List<CallTransaction> pendingTransactions;
         synchronized (sLock) {
             pendingTransactions = new ArrayList<>(mTransactions);
         }
-        for (VoipCallTransaction t : pendingTransactions) {
-            t.finish(new VoipCallTransactionResult(CallException.CODE_ERROR_UNKNOWN
+        for (CallTransaction t : pendingTransactions) {
+            t.finish(new CallTransactionResult(CallException.CODE_ERROR_UNKNOWN
                     /* TODO:: define error b/335703584 */, "clear called"));
         }
     }
 
-    private void addTransactionToHistory(VoipCallTransaction t) {
+    private void addTransactionToHistory(CallTransaction t) {
         if (!Flags.enableCallSequencing()) return;
 
         mCompletedTransactions.add(t);
         if (mCompletedTransactions.size() > TRANSACTION_HISTORY_SIZE) {
             mCompletedTransactions.poll();
         }
+    }
+
+    public void setProcessingCallSequencing(boolean processingCallSequencing) {
+        mProcessingCallSequencing = processingCallSequencing;
+    }
+
+    public boolean isProcessingCallSequencing() {
+        return mProcessingCallSequencing;
     }
 
     /**
@@ -171,7 +188,7 @@ public class TransactionManager {
         synchronized (sLock) {
             pw.println("Pending Transactions:");
             pw.increaseIndent();
-            for (VoipCallTransaction t : mTransactions) {
+            for (CallTransaction t : mTransactions) {
                 printPendingTransactionStats(t, pw);
             }
             pw.decreaseIndent();
@@ -185,7 +202,7 @@ public class TransactionManager {
 
             pw.println("Completed Transactions:");
             pw.increaseIndent();
-            for (VoipCallTransaction t : mCompletedTransactions) {
+            for (CallTransaction t : mCompletedTransactions) {
                 printCompleteTransactionStats(t, pw);
             }
             pw.decreaseIndent();
@@ -193,12 +210,12 @@ public class TransactionManager {
     }
 
     /**
-     * Recursively print the pending {@link VoipCallTransaction} stats for logging purposes.
+     * Recursively print the pending {@link CallTransaction} stats for logging purposes.
      * @param t The transaction that stats should be printed for
      * @param pw The IndentingPrintWriter to print the result to
      */
-    private void printPendingTransactionStats(VoipCallTransaction t, IndentingPrintWriter pw) {
-        VoipCallTransaction.Stats s = t.getStats();
+    private void printPendingTransactionStats(CallTransaction t, IndentingPrintWriter pw) {
+        CallTransaction.Stats s = t.getStats();
         if (s == null) {
             pw.println(String.format(Locale.getDefault(), "%s: <NO STATS>", t.mTransactionName));
             return;
@@ -215,7 +232,7 @@ public class TransactionManager {
             return;
         }
         pw.increaseIndent();
-        for (VoipCallTransaction subTransaction : t.mSubTransactions) {
+        for (CallTransaction subTransaction : t.mSubTransactions) {
             printPendingTransactionStats(subTransaction, pw);
         }
         pw.decreaseIndent();
@@ -226,8 +243,8 @@ public class TransactionManager {
      * @param t The transaction that stats should be printed for
      * @param pw The IndentingPrintWriter to print the result to
      */
-    private void printCompleteTransactionStats(VoipCallTransaction t, IndentingPrintWriter pw) {
-        VoipCallTransaction.Stats s = t.getStats();
+    private void printCompleteTransactionStats(CallTransaction t, IndentingPrintWriter pw) {
+        CallTransaction.Stats s = t.getStats();
         if (s == null) {
             pw.println(String.format(Locale.getDefault(), "%s: <NO STATS>", t.mTransactionName));
             return;
@@ -242,16 +259,16 @@ public class TransactionManager {
             return;
         }
         pw.increaseIndent();
-        for (VoipCallTransaction subTransaction : t.mSubTransactions) {
+        for (CallTransaction subTransaction : t.mSubTransactions) {
             printCompleteTransactionStats(subTransaction, pw);
         }
         pw.decreaseIndent();
     }
 
-    private String parseTransactionResult(VoipCallTransaction.Stats s) {
+    private String parseTransactionResult(CallTransaction.Stats s) {
         if (s.isTimedOut()) return "TIMED OUT";
         if (s.getTransactionResult() == null) return "PENDING";
-        if (s.getTransactionResult().getResult() == VoipCallTransactionResult.RESULT_SUCCEED) {
+        if (s.getTransactionResult().getResult() == CallTransactionResult.RESULT_SUCCEED) {
             return "SUCCESS";
         }
         return s.getTransactionResult().toString();

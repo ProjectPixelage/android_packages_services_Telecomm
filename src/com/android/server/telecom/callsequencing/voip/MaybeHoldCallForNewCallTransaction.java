@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.server.telecom.voip;
+package com.android.server.telecom.callsequencing.voip;
 
 import android.os.OutcomeReceiver;
 import android.telecom.CallException;
@@ -22,15 +22,17 @@ import android.util.Log;
 
 import com.android.server.telecom.Call;
 import com.android.server.telecom.CallsManager;
+import com.android.server.telecom.callsequencing.CallTransaction;
+import com.android.server.telecom.callsequencing.CallTransactionResult;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 /**
- * This VoipCallTransaction is responsible for holding any active call in favor of a new call
+ * This VOIP CallTransaction is responsible for holding any active call in favor of a new call
  * request. If the active call cannot be held or disconnected, the transaction will fail.
  */
-public class MaybeHoldCallForNewCallTransaction extends VoipCallTransaction {
+public class MaybeHoldCallForNewCallTransaction extends CallTransaction {
 
     private static final String TAG = MaybeHoldCallForNewCallTransaction.class.getSimpleName();
     private final CallsManager mCallsManager;
@@ -46,23 +48,23 @@ public class MaybeHoldCallForNewCallTransaction extends VoipCallTransaction {
     }
 
     @Override
-    public CompletionStage<VoipCallTransactionResult> processTransaction(Void v) {
+    public CompletionStage<CallTransactionResult> processTransaction(Void v) {
         Log.d(TAG, "processTransaction");
-        CompletableFuture<VoipCallTransactionResult> future = new CompletableFuture<>();
+        CompletableFuture<CallTransactionResult> future = new CompletableFuture<>();
 
         mCallsManager.transactionHoldPotentialActiveCallForNewCall(mCall, mIsCallControlRequest,
                 new OutcomeReceiver<>() {
             @Override
             public void onResult(Boolean result) {
                 Log.d(TAG, "processTransaction: onResult");
-                future.complete(new VoipCallTransactionResult(
-                        VoipCallTransactionResult.RESULT_SUCCEED, null));
+                future.complete(new CallTransactionResult(
+                        CallTransactionResult.RESULT_SUCCEED, null));
             }
 
             @Override
             public void onError(CallException exception) {
                 Log.d(TAG, "processTransaction: onError");
-                future.complete(new VoipCallTransactionResult(
+                future.complete(new CallTransactionResult(
                        exception.getCode(), exception.getMessage()));
             }
         });

@@ -21,6 +21,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.UserManager;
 import android.provider.BlockedNumberContract;
 import android.provider.CallLog;
 import android.telecom.CallerInfo;
@@ -29,6 +30,7 @@ import android.telecom.TelecomManager;
 
 import com.android.server.telecom.Call;
 import com.android.server.telecom.CallerInfoLookupHelper;
+import com.android.server.telecom.flags.FeatureFlags;
 import com.android.server.telecom.LogUtils;
 import com.android.server.telecom.LoggedHandlerExecutor;
 import com.android.server.telecom.settings.BlockedNumbersUtil;
@@ -45,6 +47,7 @@ public class BlockCheckerFilter extends CallFilter {
     private boolean mContactExists;
     private HandlerThread mHandlerThread;
     private Handler mHandler;
+    private FeatureFlags mFeatureFlags;
 
     public static final long CALLER_INFO_QUERY_TIMEOUT = 5000;
 
@@ -105,7 +108,7 @@ public class BlockCheckerFilter extends CallFilter {
 
     public BlockCheckerFilter(Context context, Call call,
             CallerInfoLookupHelper callerInfoLookupHelper,
-            BlockCheckerAdapter blockCheckerAdapter) {
+            BlockCheckerAdapter blockCheckerAdapter, FeatureFlags featureFlags) {
         mCall = call;
         mContext = context;
         mCallerInfoLookupHelper = callerInfoLookupHelper;
@@ -114,6 +117,7 @@ public class BlockCheckerFilter extends CallFilter {
         mHandlerThread = new HandlerThread(TAG);
         mHandlerThread.start();
         mHandler = new Handler(mHandlerThread.getLooper());
+        mFeatureFlags = featureFlags;
     }
 
     @Override
@@ -121,7 +125,13 @@ public class BlockCheckerFilter extends CallFilter {
         Log.addEvent(mCall, LogUtils.Events.BLOCK_CHECK_INITIATED);
         CompletableFuture<CallFilteringResult> resultFuture = new CompletableFuture<>();
         Bundle extras = new Bundle();
-        if (BlockedNumbersUtil.isEnhancedCallBlockingEnabledByPlatform(mContext)) {
+        final Context userContext;
+        if (mFeatureFlags.telecomMainUserInBlockCheck()) {
+            userContext = mContext.createContextAsUser(mCall.getAssociatedUser(), 0);
+        } else {
+            userContext = mContext;
+        }
+        if (BlockedNumbersUtil.isEnhancedCallBlockingEnabledByPlatform(userContext)) {
             int presentation = mCall.getHandlePresentation();
             extras.putInt(BlockedNumberContract.EXTRA_CALL_PRESENTATION, presentation);
             if (presentation == TelecomManager.PRESENTATION_ALLOWED) {
@@ -132,7 +142,7 @@ public class BlockCheckerFilter extends CallFilter {
                                 if (info != null && info.contactExists) {
                                     mContactExists = true;
                                 }
-                                getBlockStatus(resultFuture);
+                                getBlockStatus(resultFuture, userContext);
                             }
 
                             @Override
@@ -141,22 +151,22 @@ public class BlockCheckerFilter extends CallFilter {
                             }
                         });
             } else {
-                getBlockStatus(resultFuture);
+                getBlockStatus(resultFuture, userContext);
             }
         } else {
-            getBlockStatus(resultFuture);
+            getBlockStatus(resultFuture, userContext);
         }
         return resultFuture;
     }
 
     private void getBlockStatus(
-            CompletableFuture<CallFilteringResult> resultFuture) {
+            CompletableFuture<CallFilteringResult> resultFuture, Context userContext) {
         // Set presentation and if contact exists. Used in determining if the system should block
         // the passed in number. Use default values as they would be returned if the keys didn't
         // exist in the extras to maintain existing behavior.
         int presentation;
         boolean isNumberInContacts;
-        if (BlockedNumbersUtil.isEnhancedCallBlockingEnabledByPlatform(mContext)) {
+        if (BlockedNumbersUtil.isEnhancedCallBlockingEnabledByPlatform(userContext)) {
             presentation = mCall.getHandlePresentation();
         } else {
             presentation = 0;
@@ -173,7 +183,7 @@ public class BlockCheckerFilter extends CallFilter {
                 mCall.getHandle().getSchemeSpecificPart();
 
         CompletableFuture.supplyAsync(
-                () -> mBlockCheckerAdapter.getBlockStatus(mContext, number,
+                () -> mBlockCheckerAdapter.getBlockStatus(userContext, number,
                         presentation, isNumberInContacts),
                 new LoggedHandlerExecutor(mHandler, "BCF.gBS", null))
                 .thenApplyAsync((x) -> completeResult(resultFuture, x),

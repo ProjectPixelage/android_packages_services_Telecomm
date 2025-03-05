@@ -21,8 +21,11 @@ import static com.android.server.telecom.TelecomStatsLog.TELECOM_API_STATS;
 import static com.android.server.telecom.TelecomStatsLog.TELECOM_ERROR_STATS;
 import static com.google.common.truth.Truth.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyObject;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import android.app.StatsManager;
@@ -119,18 +122,27 @@ public class TelecomMetricsControllerTest extends TelecomTestCase {
     }
 
     @Test
-    public void testRegisterAtomIsSameInstance() {
+    public void testRegisterAtom() {
+        StatsManager statsManager = mContext.getSystemService(StatsManager.class);
         ApiStats stats = mock(ApiStats.class);
 
         mTelecomMetricsController.registerAtom(TELECOM_API_STATS, stats);
 
+        verify(statsManager, times(1)).setPullAtomCallback(eq(TELECOM_API_STATS), anyObject(),
+                anyObject(), eq(mTelecomMetricsController));
         assertThat(mTelecomMetricsController.getStats().get(TELECOM_API_STATS))
                 .isSameInstanceAs(stats);
     }
 
     @Test
     public void testDestroy() {
+        StatsManager statsManager = mContext.getSystemService(StatsManager.class);
         mTelecomMetricsController.destroy();
+
+        verify(statsManager, times(1)).clearPullAtomCallback(eq(CALL_AUDIO_ROUTE_STATS));
+        verify(statsManager, times(1)).clearPullAtomCallback(eq(CALL_STATS));
+        verify(statsManager, times(1)).clearPullAtomCallback(eq(TELECOM_API_STATS));
+        verify(statsManager, times(1)).clearPullAtomCallback(eq(TELECOM_ERROR_STATS));
         assertThat(mTelecomMetricsController.getStats()).isEmpty();
     }
 

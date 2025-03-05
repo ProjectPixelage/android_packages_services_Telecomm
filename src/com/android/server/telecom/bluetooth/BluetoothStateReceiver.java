@@ -211,6 +211,9 @@ public class BluetoothStateReceiver extends BroadcastReceiver {
             if (mFeatureFlags.useRefactoredAudioRouteSwitching()) {
                 mCallAudioRouteAdapter.sendMessageWithSessionInfo(BT_DEVICE_ADDED,
                         audioRouteType, device);
+                if (mFeatureFlags.keepBluetoothDevicesCacheUpdated()) {
+                    mBluetoothDeviceManager.onDeviceConnected(device, deviceType);
+                }
             } else {
                 mBluetoothDeviceManager.onDeviceConnected(device, deviceType);
             }
@@ -219,6 +222,9 @@ public class BluetoothStateReceiver extends BroadcastReceiver {
             if (mFeatureFlags.useRefactoredAudioRouteSwitching()) {
                 mCallAudioRouteAdapter.sendMessageWithSessionInfo(BT_DEVICE_REMOVED,
                         audioRouteType, device);
+                if (mFeatureFlags.keepBluetoothDevicesCacheUpdated()) {
+                    mBluetoothDeviceManager.onDeviceDisconnected(device, deviceType);
+                }
             } else {
                 mBluetoothDeviceManager.onDeviceDisconnected(device, deviceType);
             }
@@ -252,10 +258,12 @@ public class BluetoothStateReceiver extends BroadcastReceiver {
             CallAudioRouteController audioRouteController = (CallAudioRouteController)
                     mCallAudioRouteAdapter;
             if (device == null) {
+                // Update the active device cache immediately.
                 audioRouteController.updateActiveBluetoothDevice(new Pair(audioRouteType, null));
                 mCallAudioRouteAdapter.sendMessageWithSessionInfo(BT_ACTIVE_DEVICE_GONE,
                         audioRouteType);
             } else {
+                // Update the active device cache immediately.
                 audioRouteController.updateActiveBluetoothDevice(
                         new Pair(audioRouteType, device.getAddress()));
                 mCallAudioRouteAdapter.sendMessageWithSessionInfo(BT_ACTIVE_DEVICE_PRESENT,
@@ -265,11 +273,17 @@ public class BluetoothStateReceiver extends BroadcastReceiver {
                     if (!mBluetoothDeviceManager.setCommunicationDeviceForAddress(
                             device.getAddress())) {
                         Log.i(this, "handleActiveDeviceChanged: Failed to set "
-                                + "communication device for %s. Sending PENDING_ROUTE_FAILED to "
-                                + "pending audio route.", device);
-                        mCallAudioRouteAdapter.getPendingAudioRoute()
-                                .onMessageReceived(new Pair<>(PENDING_ROUTE_FAILED,
-                                        device.getAddress()), device.getAddress());
+                                + "communication device for %s.", device);
+                        if (!mFeatureFlags.resolveActiveBtRoutingAndBtTimingIssue()) {
+                            Log.i(this, "Sending PENDING_ROUTE_FAILED "
+                                    + "to pending audio route.");
+                            mCallAudioRouteAdapter.getPendingAudioRoute()
+                                    .onMessageReceived(new Pair<>(PENDING_ROUTE_FAILED,
+                                            device.getAddress()), device.getAddress());
+                        } else {
+                            Log.i(this, "Refrain from sending PENDING_ROUTE_FAILED"
+                                    + " to pending audio route.");
+                        }
                     } else {
                         // Track the currently set communication device.
                         int routeType = deviceType == BluetoothDeviceManager.DEVICE_TYPE_LE_AUDIO

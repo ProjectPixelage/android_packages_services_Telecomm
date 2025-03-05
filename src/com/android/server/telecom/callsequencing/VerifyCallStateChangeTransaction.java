@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.server.telecom.voip;
+package com.android.server.telecom.callsequencing;
 
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.server.telecom.Call;
@@ -22,8 +22,11 @@ import com.android.server.telecom.TelecomSystem;
 
 import android.telecom.Log;
 
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * VerifyCallStateChangeTransaction is a transaction that verifies a CallState change and has
@@ -31,21 +34,22 @@ import java.util.concurrent.CompletionStage;
  * <p>
  * Note: This transaction has a timeout of 2 seconds.
  */
-public class VerifyCallStateChangeTransaction extends VoipCallTransaction {
+public class VerifyCallStateChangeTransaction extends CallTransaction {
     private static final String TAG = VerifyCallStateChangeTransaction.class.getSimpleName();
     private static final long CALL_STATE_TIMEOUT_MILLISECONDS = 2000L;
     private final Call mCall;
-    private final int mTargetCallState;
-    private final CompletableFuture<VoipCallTransactionResult> mTransactionResult =
+    private final Set<Integer> mTargetCallStates;
+    private final CompletableFuture<CallTransactionResult> mTransactionResult =
             new CompletableFuture<>();
 
     private final Call.CallStateListener mCallStateListenerImpl = new Call.CallStateListener() {
         @Override
         public void onCallStateChanged(int newCallState) {
-            Log.d(TAG, "newState=[%d], expectedState=[%d]", newCallState, mTargetCallState);
-            if (newCallState == mTargetCallState) {
-                mTransactionResult.complete(new VoipCallTransactionResult(
-                        VoipCallTransactionResult.RESULT_SUCCEED, TAG));
+            Log.d(TAG, "newState=[%d], possible expected state(s)=[%s]", newCallState,
+                    mTargetCallStates);
+            if (mTargetCallStates.contains(newCallState)) {
+                mTransactionResult.complete(new CallTransactionResult(
+                        CallTransactionResult.RESULT_SUCCEED, TAG));
             }
             // NOTE:: keep listening to the call state until the timeout is reached. It's possible
             // another call state is reached in between...
@@ -53,19 +57,19 @@ public class VerifyCallStateChangeTransaction extends VoipCallTransaction {
     };
 
     public VerifyCallStateChangeTransaction(TelecomSystem.SyncRoot lock,  Call call,
-            int targetCallState) {
+            int... targetCallStates) {
         super(lock, CALL_STATE_TIMEOUT_MILLISECONDS);
         mCall = call;
-        mTargetCallState = targetCallState;
+        mTargetCallStates = IntStream.of(targetCallStates).boxed().collect(Collectors.toSet());;
     }
 
     @Override
-    public CompletionStage<VoipCallTransactionResult> processTransaction(Void v) {
+    public CompletionStage<CallTransactionResult> processTransaction(Void v) {
         Log.d(TAG, "processTransaction:");
         // It's possible the Call is already in the expected call state
         if (isNewCallStateTargetCallState()) {
-            mTransactionResult.complete(new VoipCallTransactionResult(
-                    VoipCallTransactionResult.RESULT_SUCCEED, TAG));
+            mTransactionResult.complete(new CallTransactionResult(
+                    CallTransactionResult.RESULT_SUCCEED, TAG));
             return mTransactionResult;
         }
         mCall.addCallStateListener(mCallStateListenerImpl);
@@ -78,11 +82,11 @@ public class VerifyCallStateChangeTransaction extends VoipCallTransaction {
     }
 
     private boolean isNewCallStateTargetCallState() {
-        return mCall.getState() == mTargetCallState;
+        return mTargetCallStates.contains(mCall.getState());
     }
 
     @VisibleForTesting
-    public CompletableFuture<VoipCallTransactionResult> getTransactionResult() {
+    public CompletableFuture<CallTransactionResult> getTransactionResult() {
         return mTransactionResult;
     }
 

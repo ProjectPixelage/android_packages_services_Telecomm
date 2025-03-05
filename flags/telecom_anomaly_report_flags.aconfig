@@ -16,3 +16,14 @@ flag {
   description: "If a self-managed call is stuck in certain states, disconnect it"
   bug: "360298368"
 }
+
+# OWNER=tgunn TARGET=25Q2
+flag {
+  name: "dont_timeout_destroyed_calls"
+  namespace: "telecom"
+  description: "When create connection timeout is hit, if call is already destroyed, skip anomaly"
+  bug: "381684580"
+  metadata {
+    purpose: PURPOSE_BUGFIX
+  }
+}

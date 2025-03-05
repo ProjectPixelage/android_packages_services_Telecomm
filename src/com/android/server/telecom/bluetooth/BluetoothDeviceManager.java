@@ -308,19 +308,19 @@ public class BluetoothDeviceManager {
         mFeatureFlags = featureFlags;
         if (bluetoothAdapter != null) {
             mBluetoothAdapter = bluetoothAdapter;
-            if (mFeatureFlags.useRefactoredAudioRouteSwitching()) {
-                mBluetoothHeadsetFuture = new CompletableFuture<>();
-            }
             bluetoothAdapter.getProfileProxy(context, mBluetoothProfileServiceListener,
                     BluetoothProfile.HEADSET);
             bluetoothAdapter.getProfileProxy(context, mBluetoothProfileServiceListener,
                     BluetoothProfile.HEARING_AID);
             bluetoothAdapter.getProfileProxy(context, mBluetoothProfileServiceListener,
                     BluetoothProfile.LE_AUDIO);
-            mAudioManager = context.getSystemService(AudioManager.class);
-            mExecutor = context.getMainExecutor();
-            mCommunicationDeviceTracker = communicationDeviceTracker;
         }
+        if (mFeatureFlags.useRefactoredAudioRouteSwitching()) {
+            mBluetoothHeadsetFuture = new CompletableFuture<>();
+        }
+        mAudioManager = context.getSystemService(AudioManager.class);
+        mExecutor = context.getMainExecutor();
+        mCommunicationDeviceTracker = communicationDeviceTracker;
     }
 
     public void setBluetoothRouteManager(BluetoothRouteManager brm) {
@@ -519,7 +519,10 @@ public class BluetoothDeviceManager {
                 Log.i(this, "onDeviceConnected: Adding device with address: %s and devicetype=%s",
                         device, getDeviceTypeString(deviceType));
                 targetDeviceMap.put(device.getAddress(), device);
-                mBluetoothRouteManager.onDeviceAdded(device.getAddress());
+                if (!mFeatureFlags.keepBluetoothDevicesCacheUpdated()
+                        || !mFeatureFlags.useRefactoredAudioRouteSwitching()) {
+                    mBluetoothRouteManager.onDeviceAdded(device.getAddress());
+                }
             }
         }
     }
@@ -551,7 +554,10 @@ public class BluetoothDeviceManager {
                 Log.i(this, "onDeviceDisconnected: Removing device with address: %s, devicetype=%s",
                         device, getDeviceTypeString(deviceType));
                 targetDeviceMap.remove(device.getAddress());
-                mBluetoothRouteManager.onDeviceLost(device.getAddress());
+                if (!mFeatureFlags.keepBluetoothDevicesCacheUpdated()
+                        || !mFeatureFlags.useRefactoredAudioRouteSwitching()) {
+                    mBluetoothRouteManager.onDeviceLost(device.getAddress());
+                }
             }
         }
     }
@@ -759,7 +765,7 @@ public class BluetoothDeviceManager {
             Log.w(this, "setCommunicationDeviceForAddress: Device %s not found.", address);
             return false;
         }
-        if (mAudioManager.getCommunicationDevice().equals(deviceInfo)) {
+        if (deviceInfo.equals(mAudioManager.getCommunicationDevice())) {
             Log.i(this, "setCommunicationDeviceForAddress: Device %s already active.", address);
             return true;
         }

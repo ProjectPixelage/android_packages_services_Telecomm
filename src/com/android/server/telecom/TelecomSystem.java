@@ -55,7 +55,7 @@ import com.android.server.telecom.ui.DisconnectedCallNotifier;
 import com.android.server.telecom.ui.IncomingCallNotifier;
 import com.android.server.telecom.ui.MissedCallNotifierImpl.MissedCallNotifierImplFactory;
 import com.android.server.telecom.ui.ToastFactory;
-import com.android.server.telecom.voip.TransactionManager;
+import com.android.server.telecom.callsequencing.TransactionManager;
 
 import java.io.FileNotFoundException;
 import java.io.InputStream;
@@ -224,6 +224,7 @@ public class TelecomSystem {
             RoleManagerAdapter roleManagerAdapter,
             ContactsAsyncHelper.Factory contactsAsyncHelperFactory,
             DeviceIdleControllerAdapter deviceIdleControllerAdapter,
+            String sysUiPackageName,
             Ringer.AccessibilityManagerAdapter accessibilityManagerAdapter,
             Executor asyncTaskExecutor,
             Executor asyncCallAudioTaskExecutor,
@@ -245,8 +246,8 @@ public class TelecomSystem {
         // Wrap this in a try block to ensure session cleanup occurs in the case of error.
         try {
             mPhoneAccountRegistrar = new PhoneAccountRegistrar(mContext, mLock, defaultDialerCache,
-                    packageName -> AppLabelProxy.Util.getAppLabel(
-                            mContext.getPackageManager(), packageName), null, mFeatureFlags);
+                    (packageName, userHandle) -> AppLabelProxy.Util.getAppLabel(mContext,
+                            userHandle, packageName, mFeatureFlags), null, mFeatureFlags);
 
             mContactsAsyncHelper = contactsAsyncHelperFactory.create(
                     new ContactsAsyncHelper.ContentResolverAdapter() {
@@ -386,8 +387,8 @@ public class TelecomSystem {
 
             CallStreamingNotification callStreamingNotification =
                     new CallStreamingNotification(mContext,
-                            packageName -> AppLabelProxy.Util.getAppLabel(
-                                    mContext.getPackageManager(), packageName), asyncTaskExecutor);
+                            (packageName, userHandle) -> AppLabelProxy.Util.getAppLabel(mContext,
+                                    userHandle, packageName, mFeatureFlags), asyncTaskExecutor);
 
             mCallsManager = new CallsManager(
                     mContext,
@@ -502,7 +503,9 @@ public class TelecomSystem {
                     new TelecomServiceImpl.SettingsSecureAdapterImpl(),
                     featureFlags,
                     null,
-                    mLock);
+                    mLock,
+                    metricsController,
+                    sysUiPackageName);
         } finally {
             Log.endSession();
         }

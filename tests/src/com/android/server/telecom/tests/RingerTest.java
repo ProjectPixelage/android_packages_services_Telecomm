@@ -66,6 +66,7 @@ import android.util.Pair;
 
 import androidx.test.filters.SmallTest;
 
+import com.android.server.telecom.AnomalyReporterAdapter;
 import com.android.server.telecom.AsyncRingtonePlayer;
 import com.android.server.telecom.Call;
 import com.android.server.telecom.CallState;
@@ -123,6 +124,7 @@ public class RingerTest extends TelecomTestCase {
     @Mock NotificationManager mockNotificationManager;
     @Mock Ringer.AccessibilityManagerAdapter mockAccessibilityManagerAdapter;
     @Mock private FeatureFlags mFeatureFlags;
+    @Mock private AnomalyReporterAdapter mAnomalyReporterAdapter;
 
     @Spy Ringer.VibrationEffectProxy spyVibrationEffectProxy;
 
@@ -178,7 +180,7 @@ public class RingerTest extends TelecomTestCase {
         mRingerUnderTest = new Ringer(mockPlayerFactory, mContext, mockSystemSettingsUtil,
                 asyncRingtonePlayer, mockRingtoneFactory, mockVibrator, spyVibrationEffectProxy,
                 mockInCallController, mockNotificationManager, mockAccessibilityManagerAdapter,
-                mFeatureFlags);
+                mFeatureFlags, mAnomalyReporterAdapter);
         // This future is used to wait for AsyncRingtonePlayer to finish its part.
         mRingerUnderTest.setBlockOnRingingFuture(mRingCompletionFuture);
     }

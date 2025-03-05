@@ -142,7 +142,7 @@ import com.android.server.telecom.ui.AudioProcessingNotification;
 import com.android.server.telecom.ui.CallStreamingNotification;
 import com.android.server.telecom.ui.DisconnectedCallNotifier;
 import com.android.server.telecom.ui.ToastFactory;
-import com.android.server.telecom.voip.TransactionManager;
+import com.android.server.telecom.callsequencing.TransactionManager;
 
 import com.google.common.base.Objects;
 
@@ -3329,10 +3329,10 @@ public class CallsManagerTest extends TelecomTestCase {
         Bundle extras = mock(Bundle.class);
         when(call.getIntentExtras()).thenReturn(extras);
 
-        final int attachmentDisabledMask = ~0
-                ^ CallScreeningService.CallResponse.CALL_COMPOSER_ATTACHMENT_LOCATION
-                ^ CallScreeningService.CallResponse.CALL_COMPOSER_ATTACHMENT_SUBJECT
-                ^ CallScreeningService.CallResponse.CALL_COMPOSER_ATTACHMENT_PRIORITY;
+        final int attachmentDisabledMask = ~(
+                CallScreeningService.CallResponse.CALL_COMPOSER_ATTACHMENT_LOCATION |
+                CallScreeningService.CallResponse.CALL_COMPOSER_ATTACHMENT_SUBJECT |
+                CallScreeningService.CallResponse.CALL_COMPOSER_ATTACHMENT_PRIORITY);
         CallScreeningService.ParcelableCallResponse response =
                 mock(CallScreeningService.ParcelableCallResponse.class);
         when(response.getCallComposerAttachmentsToShow()).thenReturn(attachmentDisabledMask);

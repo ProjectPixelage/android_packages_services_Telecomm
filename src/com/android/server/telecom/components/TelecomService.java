@@ -81,10 +81,11 @@ public class TelecomService extends Service implements TelecomSystem.Component {
         Log.d(this, "onBind");
         return new ITelecomLoader.Stub() {
             @Override
-            public ITelecomService createTelecomService(IInternalServiceRetriever retriever) {
+            public ITelecomService createTelecomService(IInternalServiceRetriever retriever,
+                    String sysUiPackageName) {
                 InternalServiceRetrieverAdapter adapter =
                         new InternalServiceRetrieverAdapter(retriever);
-                initializeTelecomSystem(TelecomService.this, adapter);
+                initializeTelecomSystem(TelecomService.this, adapter, sysUiPackageName);
                 synchronized (getTelecomSystem().getLock()) {
                     return getTelecomSystem().getTelecomServiceImpl().getBinder();
                 }
@@ -103,7 +104,7 @@ public class TelecomService extends Service implements TelecomSystem.Component {
      * @param context
      */
     static void initializeTelecomSystem(Context context,
-            InternalServiceRetrieverAdapter internalServiceRetriever) {
+            InternalServiceRetrieverAdapter internalServiceRetriever, String sysUiPackageName) {
         if (TelecomSystem.getInstance() == null) {
             FeatureFlags featureFlags = new FeatureFlagsImpl();
             NotificationChannelManager notificationChannelManager =
@@ -204,6 +205,7 @@ public class TelecomService extends Service implements TelecomSystem.Component {
                                     (RoleManager) context.getSystemService(Context.ROLE_SERVICE)),
                             new ContactsAsyncHelper.Factory(),
                             internalServiceRetriever.getDeviceIdleController(),
+                            sysUiPackageName,
                             new Ringer.AccessibilityManagerAdapter() {
                                 @Override
                                 public boolean startFlashNotificationSequence(

@@ -16,15 +16,10 @@
 
 package com.android.server.telecom.tests;
 
-import static com.android.server.telecom.CallAudioModeStateMachine.CALL_AUDIO_FOCUS_REQUEST;
-import static com.android.server.telecom.CallAudioModeStateMachine.RING_AUDIO_FOCUS_REQUEST;
-
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.nullable;
-import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -49,7 +44,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
 @RunWith(JUnit4.class)
@@ -327,33 +321,6 @@ public class CallAudioModeStateMachineTest extends TelecomTestCase {
 
         // Make sure we do try and start ringing again, since the ringtone wasn't already playing.
         verify(mCallAudioManager, times(2)).startRinging();
-    }
-
-    @SmallTest
-    @Test
-    public void testAudioFocusRequestWithResolveHiddenDependencies() {
-        CallAudioModeStateMachine sm = new CallAudioModeStateMachine(mSystemStateHelper,
-                mAudioManager, mTestThread.getLooper(), mFeatureFlags, mCommunicationDeviceTracker);
-        when(mFeatureFlags.telecomResolveHiddenDependencies()).thenReturn(true);
-        ArgumentCaptor<AudioFocusRequest> captor = ArgumentCaptor.forClass(AudioFocusRequest.class);
-        sm.setCallAudioManager(mCallAudioManager);
-
-        resetMocks();
-        when(mCallAudioManager.startRinging()).thenReturn(true);
-        when(mCallAudioManager.isRingtonePlaying()).thenReturn(false);
-
-        sm.sendMessage(CallAudioModeStateMachine.ENTER_RING_FOCUS_FOR_TESTING);
-        waitForHandlerAction(sm.getHandler(), TEST_TIMEOUT);
-        verify(mAudioManager).requestAudioFocus(captor.capture());
-        assertTrue(areAudioFocusRequestsMatch(captor.getValue(), RING_AUDIO_FOCUS_REQUEST));
-
-        sm.sendMessage(CallAudioModeStateMachine.ENTER_CALL_FOCUS_FOR_TESTING);
-        waitForHandlerAction(sm.getHandler(), TEST_TIMEOUT);
-        verify(mAudioManager, atLeast(1)).requestAudioFocus(captor.capture());
-        AudioFocusRequest request = captor.getValue();
-        assertTrue(areAudioFocusRequestsMatch(request, CALL_AUDIO_FOCUS_REQUEST));
-
-        sm.sendMessage(CallAudioModeStateMachine.ABANDON_FOCUS_FOR_TESTING);
     }
 
     private void resetMocks() {

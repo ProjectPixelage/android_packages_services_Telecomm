@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package com.android.server.telecom.voip;
+package com.android.server.telecom.callsequencing.voip;
 
-import static com.android.server.telecom.voip.VideoStateTranslation.TransactionalVideoStateToVideoProfileState;
+import static com.android.server.telecom.callsequencing.voip.VideoStateTranslation
+        .TransactionalVideoStateToVideoProfileState;
 
 import android.telecom.CallException;
 import android.telecom.VideoProfile;
@@ -24,11 +25,13 @@ import android.util.Log;
 
 import com.android.server.telecom.CallsManager;
 import com.android.server.telecom.Call;
+import com.android.server.telecom.callsequencing.CallTransaction;
+import com.android.server.telecom.callsequencing.CallTransactionResult;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-public class RequestVideoStateTransaction extends VoipCallTransaction {
+public class RequestVideoStateTransaction extends CallTransaction {
 
     private static final String TAG = RequestVideoStateTransaction.class.getSimpleName();
     private final Call mCall;
@@ -42,19 +45,19 @@ public class RequestVideoStateTransaction extends VoipCallTransaction {
     }
 
     @Override
-    public CompletionStage<VoipCallTransactionResult> processTransaction(Void v) {
+    public CompletionStage<CallTransactionResult> processTransaction(Void v) {
         Log.d(TAG, "processTransaction");
-        CompletableFuture<VoipCallTransactionResult> future = new CompletableFuture<>();
+        CompletableFuture<CallTransactionResult> future = new CompletableFuture<>();
 
         if (isRequestingVideoTransmission(mVideoProfileState) &&
                 !mCall.isVideoCallingSupportedByPhoneAccount()) {
-            future.complete(new VoipCallTransactionResult(
+            future.complete(new CallTransactionResult(
                     CallException.CODE_ERROR_UNKNOWN /*TODO:: define error code. b/335703584 */,
                     "Video calling is not supported by the target account"));
         } else {
             mCall.setVideoState(mVideoProfileState);
-            future.complete(new VoipCallTransactionResult(
-                    VoipCallTransactionResult.RESULT_SUCCEED,
+            future.complete(new CallTransactionResult(
+                    CallTransactionResult.RESULT_SUCCEED,
                     "The Video State was changed successfully"));
         }
         return future;

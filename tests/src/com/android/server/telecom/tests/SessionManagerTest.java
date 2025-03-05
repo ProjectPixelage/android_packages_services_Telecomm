@@ -21,9 +21,13 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
+import android.telecom.Log;
 import android.telecom.Logging.Session;
 import android.telecom.Logging.SessionManager;
+
+import com.android.server.telecom.flags.Flags;
 
 import androidx.test.filters.SmallTest;
 
@@ -57,13 +61,11 @@ public class SessionManagerTest extends TelecomTestCase {
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        mTestSessionManager = new SessionManager();
+        mTestSessionManager = new SessionManager(null);
         mTestSessionManager.registerSessionListener(((sessionName, timeMs) -> {
             mfullSessionCompleteTime = timeMs;
             mFullSessionMethodName = sessionName;
         }));
-        // Remove automatic stale session cleanup for testing
-        mTestSessionManager.mCleanStaleSessions = null;
     }
 
     @Override
@@ -410,5 +412,34 @@ public class SessionManagerTest extends TelecomTestCase {
 
         assertTrue(mTestSessionManager.mSessionMapper.isEmpty());
         assertNull(sessionRef.get());
+    }
+
+    /**
+     * If Telecom gets into a situation where there are MANY sub-sessions created in a deep tree,
+     * ensure that cleanup still happens properly.
+     */
+    @SmallTest
+    @Test
+    public void testManySubsessionCleanupStress() {
+        // This test will mostly likely fail with recursion due to stack overflow
+        if (!Flags.endSessionImprovements()) return;
+        Log.setIsExtendedLoggingEnabled(false);
+        mTestSessionManager.mCurrentThreadId = () -> TEST_PARENT_THREAD_ID;
+        mTestSessionManager.startSession(TEST_PARENT_NAME, null);
+        Session parentSession = mTestSessionManager.mSessionMapper.get(TEST_PARENT_THREAD_ID);
+        Session subsession;
+        try {
+            for (int i = 0; i < 10000; i++) {
+                subsession = mTestSessionManager.createSubsession();
+                mTestSessionManager.endSession();
+                mTestSessionManager.continueSession(subsession, TEST_CHILD_NAME + i);
+            }
+            mTestSessionManager.endSession();
+        } catch (Exception e) {
+            fail("Exception: " + e);
+        }
+        assertTrue(mTestSessionManager.mSessionMapper.isEmpty());
+        assertTrue(parentSession.isSessionCompleted());
+        assertTrue(parentSession.getChildSessions().isEmpty());
     }
 }

@@ -224,6 +224,7 @@ public class TelecomSystemTest extends TelecomTestCase{
     @Mock
     com.android.internal.telephony.flags.FeatureFlags mTelephonyFlags;
 
+    private static final String SYSTEM_UI_PACKAGE = "com.android.systemui";
     final ComponentName mInCallServiceComponentNameX =
             new ComponentName(
                     "incall-service-package-X",
@@ -580,7 +581,8 @@ public class TelecomSystemTest extends TelecomTestCase{
                             ContactsAsyncHelper.ContentResolverAdapter adapter) {
                         return new ContactsAsyncHelper(adapter, mHandlerThread.getLooper());
                     }
-                }, mDeviceIdleControllerAdapter, mAccessibilityManagerAdapter,
+                }, mDeviceIdleControllerAdapter, SYSTEM_UI_PACKAGE,
+                mAccessibilityManagerAdapter,
                 Runnable::run,
                 Runnable::run,
                 mBlockedNumbersAdapter,

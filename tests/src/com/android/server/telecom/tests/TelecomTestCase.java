@@ -51,8 +51,8 @@ public abstract class TelecomTestCase {
 
         mComponentContextFixture = new ComponentContextFixture(mFeatureFlags);
         mContext = mComponentContextFixture.getTestDouble().getApplicationContext();
-        Log.setSessionContext(mComponentContextFixture.getTestDouble().getApplicationContext());
-        Log.getSessionManager().mCleanStaleSessions = null;
+        Log.setSessionManager(mComponentContextFixture.getTestDouble().getApplicationContext(),
+                null);
     }
 
     public void tearDown() throws Exception {

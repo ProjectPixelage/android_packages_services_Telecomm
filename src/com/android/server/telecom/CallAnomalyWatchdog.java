@@ -153,7 +153,8 @@ public class CallAnomalyWatchdog extends CallsManagerListenerBase implements Cal
     public static final UUID WATCHDOG_DISCONNECTED_STUCK_VOIP_CALL_UUID =
             UUID.fromString("3fbecd12-059d-4fd3-87b7-6c3079891c23");
     public static final String WATCHDOG_DISCONNECTED_STUCK_VOIP_CALL_MSG =
-            "Telecom CallAnomalyWatchdog caught stuck VoIP call in a starting state";
+            "A VoIP call was flagged due to exceeding a one-minute threshold in the DIALING or "
+                    + "RINGING state";
 
 
     @VisibleForTesting

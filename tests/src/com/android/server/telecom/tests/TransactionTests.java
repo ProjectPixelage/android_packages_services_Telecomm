@@ -16,24 +16,25 @@
 
 package com.android.server.telecom.tests;
 
-import static com.android.server.telecom.voip.VideoStateTranslation.TransactionalVideoStateToVideoProfileState;
-import static com.android.server.telecom.voip.VideoStateTranslation.VideoProfileStateToTransactionalVideoState;
+import static com.android.server.telecom.callsequencing.voip.VideoStateTranslation
+        .TransactionalVideoStateToVideoProfileState;
+import static com.android.server.telecom.callsequencing.voip.VideoStateTranslation
+        .VideoProfileStateToTransactionalVideoState;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.isA;
-import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.isA;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import android.content.ComponentName;
@@ -59,30 +60,26 @@ import com.android.server.telecom.CallerInfoLookupHelper;
 import com.android.server.telecom.CallsManager;
 import com.android.server.telecom.ClockProxy;
 import com.android.server.telecom.ConnectionServiceWrapper;
-import com.android.server.telecom.flags.FeatureFlags;
 import com.android.server.telecom.PhoneNumberUtilsAdapter;
 import com.android.server.telecom.TelecomSystem;
+import com.android.server.telecom.callsequencing.CallTransactionResult;
+import com.android.server.telecom.callsequencing.TransactionManager;
+import com.android.server.telecom.callsequencing.VerifyCallStateChangeTransaction;
+import com.android.server.telecom.callsequencing.voip.EndCallTransaction;
+import com.android.server.telecom.callsequencing.voip.HoldCallTransaction;
+import com.android.server.telecom.callsequencing.voip.IncomingCallTransaction;
+import com.android.server.telecom.callsequencing.voip.MaybeHoldCallForNewCallTransaction;
+import com.android.server.telecom.callsequencing.voip.OutgoingCallTransaction;
+import com.android.server.telecom.callsequencing.voip.RequestNewActiveCallTransaction;
 import com.android.server.telecom.ui.ToastFactory;
-import com.android.server.telecom.voip.EndCallTransaction;
-import com.android.server.telecom.voip.HoldCallTransaction;
-import com.android.server.telecom.voip.IncomingCallTransaction;
-import com.android.server.telecom.voip.OutgoingCallTransaction;
-import com.android.server.telecom.voip.MaybeHoldCallForNewCallTransaction;
-import com.android.server.telecom.voip.RequestNewActiveCallTransaction;
-import com.android.server.telecom.voip.TransactionManager;
-import com.android.server.telecom.voip.VerifyCallStateChangeTransaction;
-import com.android.server.telecom.voip.VideoStateTranslation;
-import com.android.server.telecom.voip.VoipCallTransactionResult;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -421,7 +418,7 @@ public class TransactionTests extends TelecomTestCase {
 
         // THEN
         verify(mMockCall1, times(1)).addCallStateListener(t.getCallStateListenerImpl());
-        assertEquals(VoipCallTransactionResult.RESULT_SUCCEED,
+        assertEquals(CallTransactionResult.RESULT_SUCCEED,
                 t.getTransactionResult().get(2, TimeUnit.SECONDS).getResult());
         verify(mMockCall1, atLeastOnce()).removeCallStateListener(any());
     }

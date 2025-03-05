@@ -88,7 +88,7 @@ public class BlockCheckerFilterTest extends TelecomTestCase {
         super.setUp();
         when(mCall.getHandle()).thenReturn(TEST_HANDLE);
         mFilter = new BlockCheckerFilter(mContext, mCall, mCallerInfoLookupHelper,
-                mBlockCheckerAdapter);
+                mBlockCheckerAdapter, mFeatureFlags);
     }
 
     @SmallTest

@@ -20,6 +20,8 @@ import android.telecom.Log;
 import android.telecom.PhoneAccountHandle;
 
 import com.android.internal.telecom.ICallEventCallback;
+import com.android.server.telecom.flags.FeatureFlags;
+import com.android.server.telecom.callsequencing.TransactionManager;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -32,8 +34,10 @@ public class TransactionalServiceRepository {
     private static final String TAG = TransactionalServiceRepository.class.getSimpleName();
     private static final Map<PhoneAccountHandle, TransactionalServiceWrapper> mServiceLookupTable =
             new HashMap<>();
+    private final FeatureFlags mFlags;
 
-    public TransactionalServiceRepository() {
+    public TransactionalServiceRepository(FeatureFlags flags) {
+        mFlags = flags;
     }
 
     public TransactionalServiceWrapper addNewCallForTransactionalServiceWrapper
@@ -45,7 +49,8 @@ public class TransactionalServiceRepository {
         if (!hasExistingServiceWrapper(phoneAccountHandle)) {
             Log.d(TAG, "creating a new TSW; handle=[%s]", phoneAccountHandle);
             service = new TransactionalServiceWrapper(callEventCallback,
-                    callsManager, phoneAccountHandle, call, this);
+                    callsManager, phoneAccountHandle, call, this,
+                    TransactionManager.getInstance(), mFlags.enableCallSequencing());
         } else {
             Log.d(TAG, "add a new call to an existing TSW; handle=[%s]", phoneAccountHandle);
             service = getTransactionalServiceWrapper(phoneAccountHandle);

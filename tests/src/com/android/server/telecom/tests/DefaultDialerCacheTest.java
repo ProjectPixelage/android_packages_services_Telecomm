@@ -56,14 +56,17 @@ public class DefaultDialerCacheTest extends TelecomTestCase {
     private static final int USER0 = 0;
     private static final int USER1 = 1;
     private static final int USER2 = 2;
+    private static final int DELAY_TOLERANCE = 100;
 
     private DefaultDialerCache mDefaultDialerCache;
     private ContentObserver mDefaultDialerSettingObserver;
     private BroadcastReceiver mPackageChangeReceiver;
     private BroadcastReceiver mUserRemovedReceiver;
 
-    @Mock private DefaultDialerCache.DefaultDialerManagerAdapter mMockDefaultDialerManager;
-    @Mock private RoleManagerAdapter mRoleManagerAdapter;
+    @Mock
+    private DefaultDialerCache.DefaultDialerManagerAdapter mMockDefaultDialerManager;
+    @Mock
+    private RoleManagerAdapter mRoleManagerAdapter;
 
     @Override
     @Before
@@ -76,18 +79,19 @@ public class DefaultDialerCacheTest extends TelecomTestCase {
 
         mDefaultDialerCache = new DefaultDialerCache(
                 mContext, mMockDefaultDialerManager, mRoleManagerAdapter,
-                new TelecomSystem.SyncRoot() { });
+                new TelecomSystem.SyncRoot() {
+                });
 
         verify(mContext, times(2)).registerReceiverAsUser(
-            packageReceiverCaptor.capture(), eq(UserHandle.ALL), any(IntentFilter.class),
+                packageReceiverCaptor.capture(), eq(UserHandle.ALL), any(IntentFilter.class),
                 isNull(String.class), isNull(Handler.class));
         // Receive the first receiver that was captured, the package change receiver.
         mPackageChangeReceiver = packageReceiverCaptor.getAllValues().get(0);
 
         ArgumentCaptor<BroadcastReceiver> userRemovedReceiverCaptor =
-            ArgumentCaptor.forClass(BroadcastReceiver.class);
+                ArgumentCaptor.forClass(BroadcastReceiver.class);
         verify(mContext).registerReceiver(
-            userRemovedReceiverCaptor.capture(), any(IntentFilter.class));
+                userRemovedReceiverCaptor.capture(), any(IntentFilter.class));
         mUserRemovedReceiver = userRemovedReceiverCaptor.getAllValues().get(0);
 
         mDefaultDialerSettingObserver = mDefaultDialerCache.getContentObserver();
@@ -140,7 +144,10 @@ public class DefaultDialerCacheTest extends TelecomTestCase {
         Intent packageChangeIntent = new Intent(Intent.ACTION_PACKAGE_CHANGED,
                 Uri.fromParts("package", DIALER1, null));
         when(mRoleManagerAdapter.getDefaultDialerApp(eq(USER0))).thenReturn(DIALER2);
+
         mPackageChangeReceiver.onReceive(mContext, packageChangeIntent);
+        waitForHandlerAction(mDefaultDialerCache.mHandler, DELAY_TOLERANCE);
+
         verify(mRoleManagerAdapter, times(2)).getDefaultDialerApp(eq(USER0));
         verify(mRoleManagerAdapter, times(2)).getDefaultDialerApp(eq(USER1));
         verify(mRoleManagerAdapter, times(2)).getDefaultDialerApp(eq(USER2));
@@ -158,6 +165,8 @@ public class DefaultDialerCacheTest extends TelecomTestCase {
         Intent packageChangeIntent = new Intent(Intent.ACTION_PACKAGE_CHANGED,
                 Uri.fromParts("package", "red.orange.blue", null));
         mPackageChangeReceiver.onReceive(mContext, packageChangeIntent);
+        waitForHandlerAction(mDefaultDialerCache.mHandler, DELAY_TOLERANCE);
+
         verify(mRoleManagerAdapter, times(2)).getDefaultDialerApp(eq(USER0));
         verify(mRoleManagerAdapter, times(2)).getDefaultDialerApp(eq(USER1));
         verify(mRoleManagerAdapter, times(2)).getDefaultDialerApp(eq(USER2));
@@ -192,6 +201,8 @@ public class DefaultDialerCacheTest extends TelecomTestCase {
         packageChangeIntent.putExtra(Intent.EXTRA_REPLACING, false);
 
         mPackageChangeReceiver.onReceive(mContext, packageChangeIntent);
+        waitForHandlerAction(mDefaultDialerCache.mHandler, DELAY_TOLERANCE);
+
         verify(mRoleManagerAdapter, times(2)).getDefaultDialerApp(eq(USER0));
         verify(mRoleManagerAdapter, times(1)).getDefaultDialerApp(eq(USER1));
         verify(mRoleManagerAdapter, times(1)).getDefaultDialerApp(eq(USER2));
@@ -208,6 +219,8 @@ public class DefaultDialerCacheTest extends TelecomTestCase {
                 Uri.fromParts("package", "ppp.qqq.zzz", null));
 
         mPackageChangeReceiver.onReceive(mContext, packageChangeIntent);
+        waitForHandlerAction(mDefaultDialerCache.mHandler, DELAY_TOLERANCE);
+
         verify(mRoleManagerAdapter, times(2)).getDefaultDialerApp(eq(USER0));
         verify(mRoleManagerAdapter, times(2)).getDefaultDialerApp(eq(USER1));
         verify(mRoleManagerAdapter, times(2)).getDefaultDialerApp(eq(USER2));
@@ -225,6 +238,8 @@ public class DefaultDialerCacheTest extends TelecomTestCase {
         packageChangeIntent.putExtra(Intent.EXTRA_REPLACING, true);
 
         mPackageChangeReceiver.onReceive(mContext, packageChangeIntent);
+        waitForHandlerAction(mDefaultDialerCache.mHandler, DELAY_TOLERANCE);
+
         verify(mRoleManagerAdapter, times(1)).getDefaultDialerApp(eq(USER0));
         verify(mRoleManagerAdapter, times(1)).getDefaultDialerApp(eq(USER1));
         verify(mRoleManagerAdapter, times(1)).getDefaultDialerApp(eq(USER2));
@@ -240,7 +255,9 @@ public class DefaultDialerCacheTest extends TelecomTestCase {
         when(mRoleManagerAdapter.getDefaultDialerApp(eq(USER0))).thenReturn(DIALER2);
         when(mRoleManagerAdapter.getDefaultDialerApp(eq(USER1))).thenReturn(DIALER2);
         when(mRoleManagerAdapter.getDefaultDialerApp(eq(USER2))).thenReturn(DIALER2);
+
         mDefaultDialerSettingObserver.onChange(false);
+        waitForHandlerAction(mDefaultDialerCache.mHandler, DELAY_TOLERANCE);
 
         verify(mRoleManagerAdapter, times(2)).getDefaultDialerApp(eq(USER0));
         verify(mRoleManagerAdapter, times(2)).getDefaultDialerApp(eq(USER2));

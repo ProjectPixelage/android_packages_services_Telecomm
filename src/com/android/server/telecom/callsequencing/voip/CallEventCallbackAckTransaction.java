@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.server.telecom.voip;
+package com.android.server.telecom.callsequencing.voip;
 
 import static android.telecom.TelecomManager.TELECOM_TRANSACTION_SUCCESS;
 import static android.telecom.CallException.CODE_OPERATION_TIMED_OUT;
@@ -29,6 +29,8 @@ import android.util.Log;
 import com.android.internal.telecom.ICallEventCallback;
 import com.android.server.telecom.TelecomSystem;
 import com.android.server.telecom.TransactionalServiceWrapper;
+import com.android.server.telecom.callsequencing.CallTransaction;
+import com.android.server.telecom.callsequencing.CallTransactionResult;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -39,7 +41,7 @@ import java.util.concurrent.TimeUnit;
  * SRP: using the ICallEventCallback binder, reach out to the client for the pending call event and
  * get an acknowledgement that the call event can be completed.
  */
-public class CallEventCallbackAckTransaction extends VoipCallTransaction {
+public class CallEventCallbackAckTransaction extends CallTransaction {
     private static final String TAG = CallEventCallbackAckTransaction.class.getSimpleName();
     private final ICallEventCallback mICallEventCallback;
     private final String mAction;
@@ -48,7 +50,7 @@ public class CallEventCallbackAckTransaction extends VoipCallTransaction {
     private int mVideoState = CallAttributes.AUDIO_CALL;
     private DisconnectCause mDisconnectCause = null;
 
-    private final VoipCallTransactionResult TRANSACTION_FAILED = new VoipCallTransactionResult(
+    private final CallTransactionResult TRANSACTION_FAILED = new CallTransactionResult(
             CODE_OPERATION_TIMED_OUT, "failed to complete the operation before timeout");
 
     private static class AckResultReceiver extends ResultReceiver {
@@ -96,7 +98,7 @@ public class CallEventCallbackAckTransaction extends VoipCallTransaction {
 
 
     @Override
-    public CompletionStage<VoipCallTransactionResult> processTransaction(Void v) {
+    public CompletionStage<CallTransactionResult> processTransaction(Void v) {
         Log.d(TAG, "processTransaction");
         CountDownLatch latch = new CountDownLatch(1);
         ResultReceiver receiver = new AckResultReceiver(latch);
@@ -134,7 +136,7 @@ public class CallEventCallbackAckTransaction extends VoipCallTransaction {
             } else {
                 // success
                 return CompletableFuture.completedFuture(
-                        new VoipCallTransactionResult(VoipCallTransactionResult.RESULT_SUCCEED,
+                        new CallTransactionResult(CallTransactionResult.RESULT_SUCCEED,
                                 "success"));
             }
         } catch (InterruptedException ie) {

@@ -269,6 +269,6 @@ public class SessionTest extends TelecomTestCase {
     }
 
     private Session createTestSession(String name, String methodName) {
-        return new Session(name, methodName, 0, false, null);
+        return new Session(name, methodName, 0, false, false ,null);
     }
 }

@@ -32,6 +32,7 @@ import android.annotation.Nullable;
 import android.annotation.RequiresPermission;
 import android.app.AppOpsManager;
 import android.app.NotificationManager;
+import android.app.StatsManager;
 import android.app.StatusBarManager;
 import android.app.UiModeManager;
 import android.app.role.RoleManager;
@@ -258,6 +259,8 @@ public class ComponentContextFixture implements TestFixture<Context> {
                     return mAccessibilityManager;
                 case Context.BLOCKED_NUMBERS_SERVICE:
                     return mBlockedNumbersManager;
+                case Context.STATS_MANAGER_SERVICE:
+                    return mStatsManager;
                 default:
                     return null;
             }
@@ -301,6 +304,10 @@ public class ComponentContextFixture implements TestFixture<Context> {
                 return Context.TELECOM_SERVICE;
             } else if (svcClass == BlockedNumbersManager.class) {
                 return Context.BLOCKED_NUMBERS_SERVICE;
+            } else if (svcClass == AppOpsManager.class) {
+                return Context.APP_OPS_SERVICE;
+            } else if (svcClass == StatsManager.class) {
+                return Context.STATS_MANAGER_SERVICE;
             }
             throw new UnsupportedOperationException(svcClass.getName());
         }
@@ -642,6 +649,7 @@ public class ComponentContextFixture implements TestFixture<Context> {
     private final PermissionInfo mPermissionInfo = mock(PermissionInfo.class);
     private final SensorPrivacyManager mSensorPrivacyManager = mock(SensorPrivacyManager.class);
     private final List<BroadcastReceiver> mBroadcastReceivers = new ArrayList<>();
+    private final StatsManager mStatsManager = mock(StatsManager.class);
 
     private TelecomManager mTelecomManager = mock(TelecomManager.class);
     private BlockedNumbersManager mBlockedNumbersManager = mock(BlockedNumbersManager.class);

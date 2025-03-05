@@ -27,7 +27,7 @@
     <string name="set_call_active" msgid="3365404393507589899">"setelAktif"</string>
     <string name="answer" msgid="5423590397665409939">"jawab"</string>
     <string name="set_call_inactive" msgid="7106775211368705195">"setelNonaktif"</string>
-    <string name="disconnect_call" msgid="1349412380315371385">"putuskan koneksi"</string>
+    <string name="disconnect_call" msgid="1349412380315371385">"berhenti hubungkan"</string>
     <string name="request_earpiece_endpoint" msgid="6649571985089296573">"Earpiece"</string>
     <string name="request_speaker_endpoint" msgid="1033259535289845405">"Speaker"</string>
     <string name="request_bluetooth_endpoint" msgid="5933254250623451836">"Bluetooth"</string>

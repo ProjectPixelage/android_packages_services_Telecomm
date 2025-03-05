@@ -37,10 +37,13 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import android.app.StatsManager;
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.os.Looper;
-import android.os.UserHandle;
 import android.telecom.PhoneAccount;
+import android.telecom.PhoneAccountHandle;
 import android.util.StatsEvent;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -66,7 +69,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 @RunWith(AndroidJUnit4.class)
 public class TelecomPulledAtomTest extends TelecomTestCase {
@@ -201,12 +207,14 @@ public class TelecomPulledAtomTest extends TelecomTestCase {
         createTestFileForApiStats(System.currentTimeMillis() - MIN_PULL_INTERVAL_MILLIS - 1);
         ApiStats apiStats = spy(new ApiStats(mSpyContext, mLooper));
         final List<StatsEvent> data = new ArrayList<>();
+        int sizePulled = apiStats.mPulledAtoms.telecomApiStats.length;
 
         int result = apiStats.pull(data);
 
         assertEquals(StatsManager.PULL_SUCCESS, result);
         verify(apiStats).onPull(eq(data));
-        assertEquals(data.size(), apiStats.mPulledAtoms.telecomApiStats.length);
+        assertEquals(data.size(), sizePulled);
+        assertEquals(apiStats.mPulledAtoms.telecomApiStats.length, 0);
     }
 
     @Test
@@ -227,12 +235,14 @@ public class TelecomPulledAtomTest extends TelecomTestCase {
         createTestFileForAudioRouteStats(System.currentTimeMillis() - MIN_PULL_INTERVAL_MILLIS - 1);
         AudioRouteStats audioRouteStats = spy(new AudioRouteStats(mSpyContext, mLooper));
         final List<StatsEvent> data = new ArrayList<>();
+        int sizePulled = audioRouteStats.mPulledAtoms.callAudioRouteStats.length;
 
         int result = audioRouteStats.pull(data);
 
         assertEquals(StatsManager.PULL_SUCCESS, result);
         verify(audioRouteStats).onPull(eq(data));
-        assertEquals(data.size(), audioRouteStats.mPulledAtoms.callAudioRouteStats.length);
+        assertEquals(data.size(), sizePulled);
+        assertEquals(audioRouteStats.mPulledAtoms.callAudioRouteStats.length, 0);
     }
 
     @Test
@@ -253,12 +263,14 @@ public class TelecomPulledAtomTest extends TelecomTestCase {
         createTestFileForCallStats(System.currentTimeMillis() - MIN_PULL_INTERVAL_MILLIS - 1);
         CallStats callStats = spy(new CallStats(mSpyContext, mLooper));
         final List<StatsEvent> data = new ArrayList<>();
+        int sizePulled = callStats.mPulledAtoms.callStats.length;
 
         int result = callStats.pull(data);
 
         assertEquals(StatsManager.PULL_SUCCESS, result);
         verify(callStats).onPull(eq(data));
-        assertEquals(data.size(), callStats.mPulledAtoms.callStats.length);
+        assertEquals(data.size(), sizePulled);
+        assertEquals(callStats.mPulledAtoms.callStats.length, 0);
     }
 
     @Test
@@ -279,35 +291,119 @@ public class TelecomPulledAtomTest extends TelecomTestCase {
         createTestFileForErrorStats(System.currentTimeMillis() - MIN_PULL_INTERVAL_MILLIS - 1);
         ErrorStats errorStats = spy(new ErrorStats(mSpyContext, mLooper));
         final List<StatsEvent> data = new ArrayList<>();
+        int sizePulled = errorStats.mPulledAtoms.telecomErrorStats.length;
 
         int result = errorStats.pull(data);
 
         assertEquals(StatsManager.PULL_SUCCESS, result);
         verify(errorStats).onPull(eq(data));
-        assertEquals(data.size(), errorStats.mPulledAtoms.telecomErrorStats.length);
+        assertEquals(data.size(), sizePulled);
+        assertEquals(errorStats.mPulledAtoms.telecomErrorStats.length, 0);
     }
 
     @Test
-    public void testApiStatsLog() throws Exception {
+    public void testApiStatsLogCount() throws Exception {
         ApiStats apiStats = spy(new ApiStats(mSpyContext, mLooper));
+        ApiStats.ApiEvent event = new ApiStats.ApiEvent(VALUE_API_ID, VALUE_UID, VALUE_API_RESULT);
 
-        apiStats.log(VALUE_API_ID, VALUE_UID, VALUE_API_RESULT);
-        waitForHandlerAction(apiStats, TEST_TIMEOUT);
+        for (int i = 0; i < 10; i++) {
+            apiStats.log(event);
+            waitForHandlerAction(apiStats, TEST_TIMEOUT);
 
-        verify(apiStats, times(1)).onAggregate();
-        verify(apiStats, times(1)).save(eq(DELAY_FOR_PERSISTENT_MILLIS));
-        assertEquals(apiStats.mPulledAtoms.telecomApiStats.length, 1);
-        verifyMessageForApiStats(apiStats.mPulledAtoms.telecomApiStats[0], VALUE_API_ID,
-                VALUE_UID, VALUE_API_RESULT, 1);
+            verify(apiStats, times(i + 1)).onAggregate();
+            verify(apiStats, times(i + 1)).save(eq(DELAY_FOR_PERSISTENT_MILLIS));
+            assertEquals(apiStats.mPulledAtoms.telecomApiStats.length, 1);
+            verifyMessageForApiStats(apiStats.mPulledAtoms.telecomApiStats[0], VALUE_API_ID,
+                    VALUE_UID, VALUE_API_RESULT, i + 1);
+        }
+    }
 
-        apiStats.log(VALUE_API_ID, VALUE_UID, VALUE_API_RESULT);
-        waitForHandlerAction(apiStats, TEST_TIMEOUT);
+    @Test
+    public void testApiStatsLogEvent() throws Exception {
+        final int[] apis = {
+                ApiStats.API_UNSPECIFIC,
+                ApiStats.API_ACCEPTHANDOVER,
+                ApiStats.API_ACCEPTRINGINGCALL,
+                ApiStats.API_ACCEPTRINGINGCALLWITHVIDEOSTATE,
+                ApiStats.API_ADDCALL,
+                ApiStats.API_ADDNEWINCOMINGCALL,
+                ApiStats.API_ADDNEWINCOMINGCONFERENCE,
+                ApiStats.API_ADDNEWUNKNOWNCALL,
+                ApiStats.API_CANCELMISSEDCALLSNOTIFICATION,
+                ApiStats.API_CLEARACCOUNTS,
+                ApiStats.API_CREATELAUNCHEMERGENCYDIALERINTENT,
+                ApiStats.API_CREATEMANAGEBLOCKEDNUMBERSINTENT,
+                ApiStats.API_DUMP,
+                ApiStats.API_DUMPCALLANALYTICS,
+                ApiStats.API_ENABLEPHONEACCOUNT,
+                ApiStats.API_ENDCALL,
+                ApiStats.API_GETADNURIFORPHONEACCOUNT,
+                ApiStats.API_GETALLPHONEACCOUNTHANDLES,
+                ApiStats.API_GETALLPHONEACCOUNTS,
+                ApiStats.API_GETALLPHONEACCOUNTSCOUNT,
+                ApiStats.API_GETCALLCAPABLEPHONEACCOUNTS,
+                ApiStats.API_GETCALLSTATE,
+                ApiStats.API_GETCALLSTATEUSINGPACKAGE,
+                ApiStats.API_GETCURRENTTTYMODE,
+                ApiStats.API_GETDEFAULTDIALERPACKAGE,
+                ApiStats.API_GETDEFAULTDIALERPACKAGEFORUSER,
+                ApiStats.API_GETDEFAULTOUTGOINGPHONEACCOUNT,
+                ApiStats.API_GETDEFAULTPHONEAPP,
+                ApiStats.API_GETLINE1NUMBER,
+                ApiStats.API_GETOWNSELFMANAGEDPHONEACCOUNTS,
+                ApiStats.API_GETPHONEACCOUNT,
+                ApiStats.API_GETPHONEACCOUNTSFORPACKAGE,
+                ApiStats.API_GETPHONEACCOUNTSSUPPORTINGSCHEME,
+                ApiStats.API_GETREGISTEREDPHONEACCOUNTS,
+                ApiStats.API_GETSELFMANAGEDPHONEACCOUNTS,
+                ApiStats.API_GETSIMCALLMANAGER,
+                ApiStats.API_GETSIMCALLMANAGERFORUSER,
+                ApiStats.API_GETSYSTEMDIALERPACKAGE,
+                ApiStats.API_GETUSERSELECTEDOUTGOINGPHONEACCOUNT,
+                ApiStats.API_GETVOICEMAILNUMBER,
+                ApiStats.API_HANDLEPINMMI,
+                ApiStats.API_HANDLEPINMMIFORPHONEACCOUNT,
+                ApiStats.API_HASMANAGEONGOINGCALLSPERMISSION,
+                ApiStats.API_ISINCALL,
+                ApiStats.API_ISINCOMINGCALLPERMITTED,
+                ApiStats.API_ISINEMERGENCYCALL,
+                ApiStats.API_ISINMANAGEDCALL,
+                ApiStats.API_ISINSELFMANAGEDCALL,
+                ApiStats.API_ISOUTGOINGCALLPERMITTED,
+                ApiStats.API_ISRINGING,
+                ApiStats.API_ISTTYSUPPORTED,
+                ApiStats.API_ISVOICEMAILNUMBER,
+                ApiStats.API_PLACECALL,
+                ApiStats.API_REGISTERPHONEACCOUNT,
+                ApiStats.API_SETDEFAULTDIALER,
+                ApiStats.API_SETUSERSELECTEDOUTGOINGPHONEACCOUNT,
+                ApiStats.API_SHOWINCALLSCREEN,
+                ApiStats.API_SILENCERINGER,
+                ApiStats.API_STARTCONFERENCE,
+                ApiStats.API_UNREGISTERPHONEACCOUNT,
+        };
+        final int[] results = {ApiStats.RESULT_UNKNOWN, ApiStats.RESULT_NORMAL,
+                ApiStats.RESULT_EXCEPTION, ApiStats.RESULT_PERMISSION};
+        ApiStats apiStats = spy(new ApiStats(mSpyContext, mLooper));
+        Random rand = new Random();
+        Map<ApiStats.ApiEvent, Integer> eventMap = new HashMap<>();
 
-        verify(apiStats, times(2)).onAggregate();
-        verify(apiStats, times(2)).save(eq(DELAY_FOR_PERSISTENT_MILLIS));
-        assertEquals(apiStats.mPulledAtoms.telecomApiStats.length, 1);
-        verifyMessageForApiStats(apiStats.mPulledAtoms.telecomApiStats[0], VALUE_API_ID,
-                VALUE_UID, VALUE_API_RESULT, 2);
+        for (int i = 0; i < 10; i++) {
+            int api = apis[rand.nextInt(apis.length)];
+            int uid = rand.nextInt(65535);
+            int result = results[rand.nextInt(results.length)];
+            ApiStats.ApiEvent event = new ApiStats.ApiEvent(api, uid, result);
+            eventMap.put(event, eventMap.getOrDefault(event, 0) + 1);
+
+            apiStats.log(event);
+            waitForHandlerAction(apiStats, TEST_TIMEOUT);
+
+            verify(apiStats, times(i + 1)).onAggregate();
+            verify(apiStats, times(i + 1)).save(eq(DELAY_FOR_PERSISTENT_MILLIS));
+            assertEquals(apiStats.mPulledAtoms.telecomApiStats.length, eventMap.size());
+            assertTrue(hasMessageForApiStats(apiStats.mPulledAtoms.telecomApiStats,
+                    api, uid, result, eventMap.get(event)));
+        }
     }
 
     @Test
@@ -570,8 +666,19 @@ public class TelecomPulledAtomTest extends TelecomTestCase {
     @Test
     public void testCallStatsOnStartThenEnd() throws Exception {
         int duration = 1000;
-        UserHandle uh = UserHandle.of(UserHandle.USER_SYSTEM);
+        int fakeUid = 10010;
         PhoneAccount account = mock(PhoneAccount.class);
+        Call.CallingPackageIdentity callingPackage = new Call.CallingPackageIdentity();
+        PackageManager pm = mock(PackageManager.class);
+        ApplicationInfo ai = new ApplicationInfo();
+        ai.uid = fakeUid;
+        doReturn(ai).when(pm).getApplicationInfo(any(), anyInt());
+        doReturn(pm).when(mSpyContext).getPackageManager();
+        Context fakeContext = spy(mContext);
+        doReturn("").when(fakeContext).getPackageName();
+        ComponentName cn = new ComponentName(fakeContext, this.getClass());
+        PhoneAccountHandle handle = mock(PhoneAccountHandle.class);
+        doReturn(cn).when(handle).getComponentName();
         Call call = mock(Call.class);
         doReturn(true).when(call).isIncoming();
         doReturn(account).when(call).getPhoneAccountFromHandle();
@@ -579,7 +686,8 @@ public class TelecomPulledAtomTest extends TelecomTestCase {
         doReturn(false).when(account).hasCapabilities(eq(PhoneAccount.CAPABILITY_SELF_MANAGED));
         doReturn(true).when(account).hasCapabilities(eq(PhoneAccount.CAPABILITY_CALL_PROVIDER));
         doReturn(true).when(account).hasCapabilities(eq(PhoneAccount.CAPABILITY_SIM_SUBSCRIPTION));
-        doReturn(uh).when(call).getAssociatedUser();
+        doReturn(callingPackage).when(call).getCallingPackageIdentity();
+        doReturn(handle).when(call).getTargetPhoneAccount();
         CallStats callStats = spy(new CallStats(mSpyContext, mLooper));
 
         callStats.onCallStart(call);
@@ -590,14 +698,25 @@ public class TelecomPulledAtomTest extends TelecomTestCase {
 
         verify(callStats, times(1)).log(eq(CALL_STATS__CALL_DIRECTION__DIR_INCOMING),
                 eq(false), eq(false), eq(false), eq(CALL_STATS__ACCOUNT_TYPE__ACCOUNT_SIM),
-                eq(UserHandle.USER_SYSTEM), eq(duration));
+                eq(fakeUid), eq(duration));
     }
 
     @Test
     public void testCallStatsOnMultipleAudioDevices() throws Exception {
         int duration = 1000;
-        UserHandle uh = UserHandle.of(UserHandle.USER_SYSTEM);
+        int fakeUid = 10010;
         PhoneAccount account = mock(PhoneAccount.class);
+        Call.CallingPackageIdentity callingPackage = new Call.CallingPackageIdentity();
+        PackageManager pm = mock(PackageManager.class);
+        ApplicationInfo ai = new ApplicationInfo();
+        ai.uid = fakeUid;
+        doReturn(ai).when(pm).getApplicationInfo(any(), anyInt());
+        doReturn(pm).when(mSpyContext).getPackageManager();
+        Context fakeContext = spy(mContext);
+        doReturn("").when(fakeContext).getPackageName();
+        ComponentName cn = new ComponentName(fakeContext, this.getClass());
+        PhoneAccountHandle handle = mock(PhoneAccountHandle.class);
+        doReturn(cn).when(handle).getComponentName();
         Call call = mock(Call.class);
         doReturn(true).when(call).isIncoming();
         doReturn(account).when(call).getPhoneAccountFromHandle();
@@ -605,7 +724,8 @@ public class TelecomPulledAtomTest extends TelecomTestCase {
         doReturn(false).when(account).hasCapabilities(eq(PhoneAccount.CAPABILITY_SELF_MANAGED));
         doReturn(true).when(account).hasCapabilities(eq(PhoneAccount.CAPABILITY_CALL_PROVIDER));
         doReturn(true).when(account).hasCapabilities(eq(PhoneAccount.CAPABILITY_SIM_SUBSCRIPTION));
-        doReturn(uh).when(call).getAssociatedUser();
+        doReturn(callingPackage).when(call).getCallingPackageIdentity();
+        doReturn(handle).when(call).getTargetPhoneAccount();
         CallStats callStats = spy(new CallStats(mSpyContext, mLooper));
 
         callStats.onCallStart(call);
@@ -619,30 +739,88 @@ public class TelecomPulledAtomTest extends TelecomTestCase {
 
         verify(callStats, times(1)).log(eq(CALL_STATS__CALL_DIRECTION__DIR_INCOMING),
                 eq(false), eq(false), eq(true), eq(CALL_STATS__ACCOUNT_TYPE__ACCOUNT_SIM),
-                eq(UserHandle.USER_SYSTEM), eq(duration));
+                eq(fakeUid), eq(duration));
     }
 
     @Test
-    public void testErrorStatsLog() throws Exception {
+    public void testErrorStatsLogCount() throws Exception {
         ErrorStats errorStats = spy(new ErrorStats(mSpyContext, mLooper));
+        for (int i = 0; i < 10; i++) {
+            errorStats.log(VALUE_MODULE_ID, VALUE_ERROR_ID);
+            waitForHandlerAction(errorStats, TEST_TIMEOUT);
 
-        errorStats.log(VALUE_MODULE_ID, VALUE_ERROR_ID);
-        waitForHandlerAction(errorStats, TEST_TIMEOUT);
+            verify(errorStats, times(i + 1)).onAggregate();
+            verify(errorStats, times(i + 1)).save(eq(DELAY_FOR_PERSISTENT_MILLIS));
+            assertEquals(errorStats.mPulledAtoms.telecomErrorStats.length, 1);
+            verifyMessageForErrorStats(errorStats.mPulledAtoms.telecomErrorStats[0],
+                    VALUE_MODULE_ID,
+                    VALUE_ERROR_ID, i + 1);
+        }
+    }
 
-        verify(errorStats, times(1)).onAggregate();
-        verify(errorStats, times(1)).save(eq(DELAY_FOR_PERSISTENT_MILLIS));
-        assertEquals(errorStats.mPulledAtoms.telecomErrorStats.length, 1);
-        verifyMessageForErrorStats(errorStats.mPulledAtoms.telecomErrorStats[0], VALUE_MODULE_ID,
-                VALUE_ERROR_ID, 1);
+    @Test
+    public void testErrorStatsLogEvent() throws Exception {
+        ErrorStats errorStats = spy(new ErrorStats(mSpyContext, mLooper));
+        int[] modules = {
+                ErrorStats.SUB_UNKNOWN,
+                ErrorStats.SUB_CALL_AUDIO,
+                ErrorStats.SUB_CALL_LOGS,
+                ErrorStats.SUB_CALL_MANAGER,
+                ErrorStats.SUB_CONNECTION_SERVICE,
+                ErrorStats.SUB_EMERGENCY_CALL,
+                ErrorStats.SUB_IN_CALL_SERVICE,
+                ErrorStats.SUB_MISC,
+                ErrorStats.SUB_PHONE_ACCOUNT,
+                ErrorStats.SUB_SYSTEM_SERVICE,
+                ErrorStats.SUB_TELEPHONY,
+                ErrorStats.SUB_UI,
+                ErrorStats.SUB_VOIP_CALL,
+        };
+        int[] errors = {
+                ErrorStats.ERROR_UNKNOWN,
+                ErrorStats.ERROR_EXTERNAL_EXCEPTION,
+                ErrorStats.ERROR_INTERNAL_EXCEPTION,
+                ErrorStats.ERROR_AUDIO_ROUTE_RETRY_REJECTED,
+                ErrorStats.ERROR_BT_GET_SERVICE_FAILURE,
+                ErrorStats.ERROR_BT_REGISTER_CALLBACK_FAILURE,
+                ErrorStats.ERROR_AUDIO_ROUTE_UNAVAILABLE,
+                ErrorStats.ERROR_EMERGENCY_NUMBER_DETERMINED_FAILURE,
+                ErrorStats.ERROR_NOTIFY_CALL_STREAM_START_FAILURE,
+                ErrorStats.ERROR_NOTIFY_CALL_STREAM_STATE_CHANGED_FAILURE,
+                ErrorStats.ERROR_NOTIFY_CALL_STREAM_STOP_FAILURE,
+                ErrorStats.ERROR_RTT_STREAM_CLOSE_FAILURE,
+                ErrorStats.ERROR_RTT_STREAM_CREATE_FAILURE,
+                ErrorStats.ERROR_SET_MUTED_FAILURE,
+                ErrorStats.ERROR_VIDEO_PROVIDER_SET_FAILURE,
+                ErrorStats.ERROR_WIRED_HEADSET_NOT_AVAILABLE,
+                ErrorStats.ERROR_LOG_CALL_FAILURE,
+                ErrorStats.ERROR_RETRIEVING_ACCOUNT_EMERGENCY,
+                ErrorStats.ERROR_RETRIEVING_ACCOUNT,
+                ErrorStats.ERROR_EMERGENCY_CALL_ABORTED_NO_ACCOUNT,
+                ErrorStats.ERROR_DEFAULT_MO_ACCOUNT_MISMATCH,
+                ErrorStats.ERROR_ESTABLISHING_CONNECTION,
+                ErrorStats.ERROR_REMOVING_CALL,
+                ErrorStats.ERROR_STUCK_CONNECTING_EMERGENCY,
+                ErrorStats.ERROR_STUCK_CONNECTING,
+        };
+        Random rand = new Random();
+        Map<Long, Integer> eventMap = new HashMap<>();
 
-        errorStats.log(VALUE_MODULE_ID, VALUE_ERROR_ID);
-        waitForHandlerAction(errorStats, TEST_TIMEOUT);
+        for (int i = 0; i < 10; i++) {
+            int module = modules[rand.nextInt(modules.length)];
+            int error = errors[rand.nextInt(errors.length)];
+            long key = (long) module << 32 | error;
+            eventMap.put(key, eventMap.getOrDefault(key, 0) + 1);
 
-        verify(errorStats, times(2)).onAggregate();
-        verify(errorStats, times(2)).save(eq(DELAY_FOR_PERSISTENT_MILLIS));
-        assertEquals(errorStats.mPulledAtoms.telecomErrorStats.length, 1);
-        verifyMessageForErrorStats(errorStats.mPulledAtoms.telecomErrorStats[0], VALUE_MODULE_ID,
-                VALUE_ERROR_ID, 2);
+            errorStats.log(module, error);
+            waitForHandlerAction(errorStats, DELAY_TOLERANCE);
+
+            verify(errorStats, times(i + 1)).onAggregate();
+            verify(errorStats, times(i + 1)).save(eq(DELAY_FOR_PERSISTENT_MILLIS));
+            assertEquals(errorStats.mPulledAtoms.telecomErrorStats.length, eventMap.size());
+            assertTrue(hasMessageForErrorStats(
+                    errorStats.mPulledAtoms.telecomErrorStats, module, error, eventMap.get(key)));
+        }
     }
 
     private void createTestFileForApiStats(long timestamps) throws IOException {
@@ -664,7 +842,7 @@ public class TelecomPulledAtomTest extends TelecomTestCase {
     }
 
     private void verifyTestDataForApiStats(final PulledAtomsClass.PulledAtoms atom,
-                                           long timestamps) {
+            long timestamps) {
         assertNotNull(atom);
         assertEquals(atom.getTelecomApiStatsPullTimestampMillis(), timestamps);
         assertNotNull(atom.telecomApiStats);
@@ -677,11 +855,22 @@ public class TelecomPulledAtomTest extends TelecomTestCase {
     }
 
     private void verifyMessageForApiStats(final PulledAtomsClass.TelecomApiStats msg, int apiId,
-                                          int uid, int result, int count) {
+            int uid, int result, int count) {
         assertEquals(msg.getApiName(), apiId);
         assertEquals(msg.getUid(), uid);
         assertEquals(msg.getApiResult(), result);
         assertEquals(msg.getCount(), count);
+    }
+
+    private boolean hasMessageForApiStats(final PulledAtomsClass.TelecomApiStats[] msgs, int apiId,
+            int uid, int result, int count) {
+        for (PulledAtomsClass.TelecomApiStats msg : msgs) {
+            if (msg.getApiName() == apiId && msg.getUid() == uid && msg.getApiResult() == result
+                    && msg.getCount() == count) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void createTestFileForAudioRouteStats(long timestamps) throws IOException {
@@ -704,7 +893,7 @@ public class TelecomPulledAtomTest extends TelecomTestCase {
     }
 
     private void verifyTestDataForAudioRouteStats(final PulledAtomsClass.PulledAtoms atom,
-                                                  long timestamps) {
+            long timestamps) {
         assertNotNull(atom);
         assertEquals(atom.getCallAudioRouteStatsPullTimestampMillis(), timestamps);
         assertNotNull(atom.callAudioRouteStats);
@@ -750,7 +939,7 @@ public class TelecomPulledAtomTest extends TelecomTestCase {
     }
 
     private void verifyTestDataForCallStats(final PulledAtomsClass.PulledAtoms atom,
-                                            long timestamps) {
+            long timestamps) {
         assertNotNull(atom);
         assertEquals(atom.getCallStatsPullTimestampMillis(), timestamps);
         assertNotNull(atom.callStats);
@@ -782,8 +971,8 @@ public class TelecomPulledAtomTest extends TelecomTestCase {
                 new PulledAtomsClass.TelecomErrorStats[VALUE_ATOM_COUNT];
         for (int i = 0; i < VALUE_ATOM_COUNT; i++) {
             atom.telecomErrorStats[i] = new PulledAtomsClass.TelecomErrorStats();
-            atom.telecomErrorStats[i].setSubmoduleName(VALUE_MODULE_ID);
-            atom.telecomErrorStats[i].setErrorName(VALUE_ERROR_ID);
+            atom.telecomErrorStats[i].setSubmodule(VALUE_MODULE_ID);
+            atom.telecomErrorStats[i].setError(VALUE_ERROR_ID);
             atom.telecomErrorStats[i].setCount(VALUE_ERROR_COUNT);
         }
         atom.setTelecomErrorStatsPullTimestampMillis(timestamps);
@@ -807,8 +996,19 @@ public class TelecomPulledAtomTest extends TelecomTestCase {
 
     private void verifyMessageForErrorStats(final PulledAtomsClass.TelecomErrorStats msg,
             int moduleId, int errorId, int count) {
-        assertEquals(msg.getSubmoduleName(), moduleId);
-        assertEquals(msg.getErrorName(), errorId);
+        assertEquals(msg.getSubmodule(), moduleId);
+        assertEquals(msg.getError(), errorId);
         assertEquals(msg.getCount(), count);
+    }
+
+    private boolean hasMessageForErrorStats(final PulledAtomsClass.TelecomErrorStats[] msgs,
+            int moduleId, int errorId, int count) {
+        for (PulledAtomsClass.TelecomErrorStats msg : msgs) {
+            if (msg.getSubmodule() == moduleId && msg.getError() == errorId
+                    && msg.getCount() == count) {
+                return true;
+            }
+        }
+        return false;
     }
 }

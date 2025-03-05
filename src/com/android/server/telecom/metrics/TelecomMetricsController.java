@@ -30,6 +30,8 @@ import android.util.StatsEvent;
 
 import androidx.annotation.VisibleForTesting;
 
+import com.android.modules.utils.HandlerExecutor;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -51,7 +53,7 @@ public class TelecomMetricsController implements StatsManager.StatsPullAtomCallb
 
     @NonNull
     public static TelecomMetricsController make(@NonNull Context context) {
-        Log.i(TAG, "TMC.iN1");
+        Log.i(TAG, "TMC.m1");
         HandlerThread handlerThread = new HandlerThread(TAG);
         handlerThread.start();
         return make(context, handlerThread);
@@ -61,7 +63,7 @@ public class TelecomMetricsController implements StatsManager.StatsPullAtomCallb
     @NonNull
     public static TelecomMetricsController make(@NonNull Context context,
                                                 @NonNull HandlerThread handlerThread) {
-        Log.i(TAG, "TMC.iN2");
+        Log.i(TAG, "TMC.m2");
         Objects.requireNonNull(context);
         Objects.requireNonNull(handlerThread);
         return new TelecomMetricsController(context, handlerThread);
@@ -122,10 +124,23 @@ public class TelecomMetricsController implements StatsManager.StatsPullAtomCallb
 
     @VisibleForTesting
     public void registerAtom(int tag, TelecomPulledAtom atom) {
-        mStats.put(tag, atom);
+        final StatsManager statsManager = mContext.getSystemService(StatsManager.class);
+        if (statsManager != null) {
+            statsManager.setPullAtomCallback(tag, null, new HandlerExecutor(atom), this);
+            mStats.put(tag, atom);
+        } else {
+            Log.w(TAG, "Unable to register the pulled atom as StatsManager is null");
+        }
     }
 
     public void destroy() {
+        final StatsManager statsManager = mContext.getSystemService(StatsManager.class);
+        if (statsManager != null) {
+            mStats.forEach((tag, stat) -> statsManager.clearPullAtomCallback(tag));
+        } else {
+            Log.w(TAG, "Unable to clear pulled atoms as StatsManager is null");
+        }
+
         mStats.clear();
         mHandlerThread.quitSafely();
     }

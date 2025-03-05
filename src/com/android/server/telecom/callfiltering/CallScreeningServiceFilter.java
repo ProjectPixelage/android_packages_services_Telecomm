@@ -269,7 +269,8 @@ public class CallScreeningServiceFilter extends CallFilter {
         mContext = context;
         mPackageManager = mContext.getPackageManager();
         mCallsManager = callsManager;
-        mAppName = appLabelProxy.getAppLabel(mPackageName);
+        mAppName = appLabelProxy.getAppLabel(mPackageName,
+                mCall.getAssociatedUser());
         mParcelableCallUtilsConverter = parcelableCallUtilsConverter;
     }
 

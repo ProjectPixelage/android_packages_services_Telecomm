@@ -50,8 +50,8 @@
     <string name="outgoing_call_not_allowed_no_permission" msgid="8590468836581488679">"Este aplicativo não pode fazer chamadas sem a permissão do smartphone."</string>
     <string name="outgoing_call_error_no_phone_number_supplied" msgid="7665135102566099778">"Para realizar uma chamada, digite um número válido."</string>
     <string name="duplicate_video_call_not_allowed" msgid="5754746140185781159">"No momento, não é possível adicionar a chamada."</string>
-    <string name="no_vm_number" msgid="2179959110602180844">"Número correio de voz ausente"</string>
-    <string name="no_vm_number_msg" msgid="1339245731058529388">"Não há um número correio de voz armazenado no chip."</string>
+    <string name="no_vm_number" msgid="2179959110602180844">"Número do correio de voz ausente"</string>
+    <string name="no_vm_number_msg" msgid="1339245731058529388">"Não há um número do correio de voz armazenado no chip."</string>
     <string name="add_vm_number_str" msgid="5179510133063168998">"Adicionar número"</string>
     <string name="change_default_dialer_dialog_title" msgid="5861469279421508060">"Usar o <xliff:g id="NEW_APP">%s</xliff:g> como seu app de telefone padrão?"</string>
     <string name="change_default_dialer_dialog_affirmative" msgid="8604665314757739550">"Definir padrão"</string>
